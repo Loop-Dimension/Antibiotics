@@ -156,10 +156,20 @@ const Dashboard = () => {
       return;
     }
 
-    // Create recommended medication order
-    const recommendedMedication = patientData?.diagnosis1?.includes('pneumonia') 
-      ? { name: 'Ceftriaxone', dosage: '2 g', frequency: 'q24h', duration: '7 days' }
-      : { name: 'Levofloxacin', dosage: '750 mg', frequency: 'q24h', duration: '5 days' };
+    // Create recommended medication order from AI results (no hardcoded defaults)
+    let recommendedMedication;
+    if (recommendations && recommendations.length > 0) {
+      const top = recommendations[0];
+      recommendedMedication = {
+        name: top?.antibiotic || 'Unknown',
+        dosage: top?.dose || '',
+        frequency: top?.interval || top?.frequency || '',
+        duration: top?.duration || ''
+      };
+    } else {
+      alert('No AI recommendation available. Please retrieve recommendations first or enter orders manually.');
+      return;
+    }
 
     const orderData = {
       patient_id: patientId,
@@ -206,31 +216,6 @@ const Dashboard = () => {
   const goToHomeDashboard = () => {
     navigate('/');
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl">Loading patient data...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-lg border border-red-300 p-8 max-w-md w-full text-center">
-          <div className="text-red-600 text-xl font-bold mb-4">Error</div>
-          <div className="text-gray-700 mb-6">{error}</div>
-          <button 
-            onClick={goToHomeDashboard}
-            className="bg-blue-600 text-white px-6 py-2 rounded-md font-medium hover:bg-blue-700"
-          >
-            Go to Dashboard
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -487,35 +472,19 @@ const Dashboard = () => {
               ) : (
                 <div className="text-center py-8">
                   <div className="text-gray-500">No AI recommendations available</div>
-                  <div className="text-xs text-gray-400 mt-1">Using clinical guidelines</div>
-                  {/* Fallback to static recommendations */}
-                  <table className="w-full text-sm mt-4">
-                    <thead>
-                      <tr className="bg-gray-50 border-b">
-                        <th className="px-3 py-2 text-left font-medium text-gray-600">Antibiotic</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-600">Dose</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-600">Duration</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-600">Rationale</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="border-b">
-                        <td className="px-3 py-4 text-sm">
-                          {patientData?.diagnosis1?.includes('pneumonia') ? 'Ceftriaxone' : 'Levofloxacin'} IV
-                        </td>
-                        <td className="px-3 py-4 text-sm">
-                          {patientData?.diagnosis1?.includes('pneumonia') ? '2 g q24h' : '750 mg q24h'}
-                        </td>
-                        <td className="px-3 py-4 text-sm text-center">
-                          {patientData?.diagnosis1?.includes('pneumonia') ? '7' : '5'}<br/>days
-                        </td>
-                        <td className="px-3 py-4 text-sm">
-                          {patientData?.diagnosis1?.includes('pneumonia') ? 'Pneumonia protocol' : 'UTI guideline'}<br/>
-                          (IDSA 2024)
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                  <div className="text-xs text-gray-400 mt-1">Please wait for API response or check patient data</div>
+                  {/* Show current antibiotic instead of fallback recommendations */}
+                  {patientData?.antibiotics && patientData.antibiotics !== 'None' && (
+                    <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                      <div className="text-sm">
+                        <div className="font-medium text-blue-800">Current Treatment</div>
+                        <div className="text-blue-700">{patientData.antibiotics}</div>
+                        <div className="text-xs text-blue-600 mt-2">
+                          Fetching similar recommendations from database...
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

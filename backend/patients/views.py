@@ -85,10 +85,19 @@ class PatientViewSet(viewsets.ModelViewSet):
             recommendations = result.get('recommendations', [])
             message = result.get('message', 'Recommendations generated successfully')
             status = result.get('status', 'success')
+            current_antibiotic_analysis = result.get('current_antibiotic_analysis', None)
+            
+            # Clean up current antibiotic analysis for JSON serialization
+            if current_antibiotic_analysis and current_antibiotic_analysis.get('best_match'):
+                # Remove the raw antibiotic object that's not JSON serializable
+                if 'antibiotic' in current_antibiotic_analysis['best_match']:
+                    del current_antibiotic_analysis['best_match']['antibiotic']
             
             response_data = {
                 'patient_id': patient.patient_id,
                 'patient_name': patient.name,
+                'current_antibiotic': patient.antibiotics if hasattr(patient, 'antibiotics') else None,
+                'current_antibiotic_analysis': current_antibiotic_analysis,
                 'recommendations': recommendations,
                 'message': message,
                 'status': status,
