@@ -1,9 +1,9 @@
 Antibiotics,CcCl (mL/m),Dose,Route,Interval,Remark
-Ciprofloxacin  500mg ,>=50,500 mg,PO,q12h,x7d No dose adjustment
+Ciprofloxacin  500mg ,>=50,500 mg,PO,q12h,
 Ciprofloxacin 500mg ,20-50,400 mg,PO,q24h,
 Ciprofloxacin 500mg,<20,200 mg,PO,q24h,
 Ciprofloxacin 500mg ,HD,200 mg,PO,q24h,
-Ciprofloxacin 1000mg ,>50,No dosage adjustment,,,no dose adjustment
+Ciprofloxacin 1000mg ,>50,No dosage adjustment,,,
 Ciprofloxacin 1000mg ,30-50,250-500mg,PO,q12h,
 Ciprofloxacin 1000mg ,30-50,No dosage adjustment,IV,,
 Ciprofloxacin 1000mg ,29-May,,PO,q18h,

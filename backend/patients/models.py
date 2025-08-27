@@ -175,22 +175,122 @@ class EMRSession(models.Model):
         return f"EMR Session for {self.user.username}"
 
 
-class AntibioticDosing(models.Model):
-    antibiotic = models.CharField(max_length=100)
-    crcl_range = models.CharField(max_length=50)  # Increased from 20 to 50
-    dose = models.CharField(max_length=200, blank=True)  # Increased to handle longer doses
-    route = models.CharField(max_length=10, blank=True)  # PO, IV
-    interval = models.CharField(max_length=50, blank=True)  # Increased from 20 to 50
-    remark = models.TextField(blank=True)
-    
-    # Additional fields for better matching
-    pathogen_effectiveness = models.JSONField(default=list, blank=True)  # List of pathogens this antibiotic is effective against
-    infection_types = models.JSONField(default=list, blank=True)  # UTI, pneumonia, etc.
-    contraindications = models.JSONField(default=list, blank=True)  # Allergies or conditions
-    severity_score = models.IntegerField(default=1)  # 1-5, for ranking recommendations
+# New models for dynamic antibiotic dosing system
+class Condition(models.Model):
+    name = models.CharField(max_length=100, unique=True, help_text="Condition name (e.g., Pyelonephritis)")
+    description = models.TextField(blank=True, help_text="Additional description of the condition")
+    created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        unique_together = ['antibiotic', 'crcl_range']
+        db_table = 'conditions'
+        ordering = ['name']
     
     def __str__(self):
-        return f"{self.antibiotic} - CrCl: {self.crcl_range}"
+        return self.name
+
+
+class Severity(models.Model):
+    condition = models.ForeignKey(Condition, on_delete=models.CASCADE, related_name='severities')
+    level = models.CharField(max_length=200, help_text="Severity description (e.g., 'Uncomplicated, community-acquired, mild to moderate')")
+    severity_order = models.PositiveIntegerField(default=1, help_text="Order for severity ranking (1=mild, 5=severe)")
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'severities'
+        unique_together = ['condition', 'level']
+        ordering = ['condition', 'severity_order']
+    
+    def __str__(self):
+        return f"{self.condition.name} - {self.level}"
+
+
+class Pathogen(models.Model):
+    name = models.CharField(max_length=100, unique=True, help_text="Pathogen name (e.g., E. coli)")
+    gram_type = models.CharField(max_length=20, choices=[
+        ('positive', 'Gram Positive'),
+        ('negative', 'Gram Negative'),
+        ('other', 'Other')
+    ], blank=True, help_text="Gram staining classification")
+    description = models.TextField(blank=True, help_text="Additional pathogen information")
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'pathogens'
+        ordering = ['name']
+    
+    def __str__(self):
+        return self.name
+
+
+class SeverityPathogen(models.Model):
+    """Many-to-many relationship between severity levels and pathogens"""
+    severity = models.ForeignKey(Severity, on_delete=models.CASCADE, related_name='pathogens')
+    pathogen = models.ForeignKey(Pathogen, on_delete=models.CASCADE, related_name='severities')
+    prevalence = models.CharField(max_length=20, choices=[
+        ('common', 'Common'),
+        ('uncommon', 'Uncommon'),
+        ('rare', 'Rare')
+    ], default='common', help_text="Prevalence of this pathogen in this severity")
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'severity_pathogens'
+        unique_together = ['severity', 'pathogen']
+    
+    def __str__(self):
+        return f"{self.severity} - {self.pathogen.name}"
+
+
+class AntibioticDosing(models.Model):
+    DIALYSIS_CHOICES = [
+        ('none', 'None'),
+        ('hd', 'Hemodialysis'),
+        ('pd', 'Peritoneal Dialysis'),
+        ('crrt', 'CRRT'),
+        ('ecmo', 'ECMO'),
+    ]
+    
+    ROUTE_CHOICES = [
+        ('PO', 'Oral'),
+        ('IV', 'Intravenous'),
+        ('IM', 'Intramuscular'),
+        ('SC', 'Subcutaneous'),
+    ]
+    
+    PATIENT_TYPE_CHOICES = [
+        ('adult', 'Adult'),
+        ('child', 'Child'),
+    ]
+    
+    antibiotic = models.CharField(max_length=100, help_text="Antibiotic name")
+    condition = models.ForeignKey(Condition, on_delete=models.CASCADE, related_name='dosing_guidelines')
+    severity = models.ForeignKey(Severity, on_delete=models.CASCADE, related_name='dosing_guidelines')
+    pathogens = models.ManyToManyField(Pathogen, related_name='dosing_guidelines', help_text="Target pathogens")
+    
+    # Creatinine Clearance range
+    crcl_min = models.DecimalField(max_digits=6, decimal_places=2, help_text="Minimum CrCl (mL/min)")
+    crcl_max = models.DecimalField(max_digits=6, decimal_places=2, help_text="Maximum CrCl (mL/min)")
+    
+    # Dialysis type
+    dialysis_type = models.CharField(max_length=10, choices=DIALYSIS_CHOICES, default='none')
+    
+    # Dosing information
+    dose = models.CharField(max_length=200, help_text="Dose (e.g., '500mg', '1-2g')")
+    route = models.CharField(max_length=10, choices=ROUTE_CHOICES, help_text="Administration route")
+    interval = models.CharField(max_length=50, help_text="Dosing interval (e.g., 'q12h', 'q8h')")
+    
+    # Additional information
+    remark = models.TextField(blank=True, help_text="Additional dosing remarks or considerations")
+    patient_type = models.CharField(max_length=20, choices=PATIENT_TYPE_CHOICES, default='adult')
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'antibiotic_dosing'
+        unique_together = ['antibiotic', 'condition', 'severity', 'crcl_min', 'crcl_max', 'dialysis_type', 'patient_type']
+        ordering = ['antibiotic', 'condition', 'severity__severity_order']
+    
+    def __str__(self):
+        return f"{self.antibiotic} - {self.condition.name} ({self.severity.level}) - CrCl: {self.crcl_min}-{self.crcl_max}"

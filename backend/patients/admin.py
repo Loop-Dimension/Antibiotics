@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Patient, CultureTest, Medication, EMRSystem, EMROrder, 
-    EMRSession, AntibioticDosing
+    EMRSession, AntibioticDosing, Condition, Severity, Pathogen, SeverityPathogen
 )
 
 
@@ -103,28 +103,63 @@ class EMRSessionAdmin(admin.ModelAdmin):
     readonly_fields = ['session_token', 'created_at']
 
 
+@admin.register(Condition)
+class ConditionAdmin(admin.ModelAdmin):
+    list_display = ['name', 'description', 'created_at']
+    search_fields = ['name', 'description']
+    ordering = ['name']
+
+
+@admin.register(Severity)
+class SeverityAdmin(admin.ModelAdmin):
+    list_display = ['condition', 'level', 'severity_order', 'created_at']
+    list_filter = ['condition', 'severity_order']
+    search_fields = ['level', 'condition__name']
+    ordering = ['condition', 'severity_order']
+
+
+@admin.register(Pathogen)
+class PathogenAdmin(admin.ModelAdmin):
+    list_display = ['name', 'gram_type', 'created_at']
+    list_filter = ['gram_type', 'created_at']
+    search_fields = ['name', 'description']
+    ordering = ['name']
+
+
+@admin.register(SeverityPathogen)
+class SeverityPathogenAdmin(admin.ModelAdmin):
+    list_display = ['severity', 'pathogen', 'prevalence', 'created_at']
+    list_filter = ['prevalence', 'pathogen__gram_type', 'severity__condition']
+    search_fields = ['severity__level', 'pathogen__name']
+    ordering = ['severity', 'pathogen']
+
+
 @admin.register(AntibioticDosing)
 class AntibioticDosingAdmin(admin.ModelAdmin):
-    list_display = ['antibiotic', 'crcl_range', 'dose', 'route', 'interval', 'severity_score']
-    list_filter = ['route', 'severity_score', 'crcl_range']
-    search_fields = ['antibiotic', 'dose']
+    list_display = ['antibiotic', 'condition', 'severity', 'crcl_range_display', 'dose', 'route', 'patient_type']
+    list_filter = ['route', 'patient_type', 'dialysis_type', 'condition', 'severity__severity_order']
+    search_fields = ['antibiotic', 'dose', 'condition__name']
+    filter_horizontal = ['pathogens']
+    
+    def crcl_range_display(self, obj):
+        return f"{obj.crcl_min}-{obj.crcl_max}"
+    crcl_range_display.short_description = 'CrCl Range'
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('antibiotic', 'crcl_range', 'dose', 'route', 'interval')
+            'fields': ('antibiotic', 'condition', 'severity', 'patient_type')
         }),
-        ('Clinical Information', {
-            'fields': ('pathogen_effectiveness', 'infection_types', 'contraindications', 'severity_score')
+        ('Creatinine Clearance & Dialysis', {
+            'fields': ('crcl_min', 'crcl_max', 'dialysis_type')
+        }),
+        ('Dosing Information', {
+            'fields': ('dose', 'route', 'interval')
+        }),
+        ('Target Pathogens', {
+            'fields': ('pathogens',)
         }),
         ('Additional Notes', {
             'fields': ('remark',),
             'classes': ('collapse',)
         })
     )
-    
-    def get_readonly_fields(self, request, obj=None):
-        # Make pathogen_effectiveness, infection_types, contraindications read-only if they contain data
-        readonly = []
-        if obj and (obj.pathogen_effectiveness or obj.infection_types or obj.contraindications):
-            readonly.extend(['pathogen_effectiveness', 'infection_types', 'contraindications'])
-        return readonly

@@ -33,7 +33,7 @@ const Dashboard = () => {
       const response = await patientsAPI.getPatient(id);
       setPatientData(response.data);
       
-      // Fetch AI recommendations
+      // Fetch recommended regimen
       fetchAIRecommendations(id);
       
       setLoading(false);
@@ -54,7 +54,7 @@ const Dashboard = () => {
       const response = await patientsAPI.getAntibioticRecommendations(id);
       setRecommendations(response.data.recommendations || []);
     } catch (error) {
-      console.error('Error fetching AI recommendations:', error);
+      console.error('Error fetching recommended regimen:', error);
       // Use fallback recommendations if API fails
       setRecommendations([]);
     }
@@ -454,7 +454,7 @@ const Dashboard = () => {
           <div className="w-1/2 p-6">
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-900">AI Recommendations</h3>
+                <h3 className="text-xl font-bold text-gray-900">Recommended Regimen</h3>
                 <button 
                   onClick={() => fetchAIRecommendations(patientId)}
                   className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md text-sm font-medium hover:bg-blue-200"
@@ -479,7 +479,7 @@ const Dashboard = () => {
                 {recommendationsLoading ? (
                   <div className="text-center py-8">
                     <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    <div className="text-gray-500 mt-2">Loading AI recommendations...</div>
+                    <div className="text-gray-500 mt-2">Loading recommended regimen...</div>
                   </div>
                 ) : recommendations.length > 0 ? (
                   <div className="space-y-4">
@@ -518,7 +518,7 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <div className="text-gray-500">No AI recommendations available</div>
+                    <div className="text-gray-500">No recommended regimen available</div>
                     <div className="text-xs text-gray-400 mt-1">Click refresh to fetch recommendations</div>
                   </div>
                 )}
@@ -529,7 +529,7 @@ const Dashboard = () => {
                 <h4 className="font-medium text-gray-900 mb-2">Clinical Guidelines</h4>
                 <div className="text-sm text-gray-600 space-y-1">
                   <div><strong>Sources:</strong> IDSA Guidelines 2023, Korean Guidelines 2024</div>
-                  <div>AI recommendations based on local resistance patterns (updated Aug 2025)</div>
+                  <div>Recommendations based on local resistance patterns (updated Aug 2025)</div>
                   <div>Risk-adjusted for patient comorbidities and renal function</div>
                 </div>
               </div>
@@ -602,7 +602,7 @@ const Dashboard = () => {
               <div className="space-y-3 text-sm text-gray-600">
                 <p>• Use the search bar above to quickly find existing patients</p>
                 <p>• Add new patients with comprehensive clinical data for accurate recommendations</p>
-                <p>• AI recommendations are based on the latest IDSA and Korean clinical guidelines</p>
+                <p>• Recommendations are based on the latest IDSA and Korean clinical guidelines</p>
                 <p>• All dosing suggestions are automatically adjusted for renal function</p>
               </div>
             </div>
