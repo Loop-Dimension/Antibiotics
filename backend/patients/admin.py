@@ -136,14 +136,20 @@ class SeverityPathogenAdmin(admin.ModelAdmin):
 
 @admin.register(AntibioticDosing)
 class AntibioticDosingAdmin(admin.ModelAdmin):
-    list_display = ['antibiotic', 'condition', 'severity', 'crcl_range_display', 'dose', 'route', 'patient_type']
-    list_filter = ['route', 'patient_type', 'dialysis_type', 'condition', 'severity__severity_order']
+    list_display = ['antibiotic', 'condition', 'severity', 'crcl_range_display', 'dose', 'route_display', 'patient_type']
+    list_filter = ['patient_type', 'dialysis_type', 'condition', 'severity__severity_order']
     search_fields = ['antibiotic', 'dose', 'condition__name']
     filter_horizontal = ['pathogens']
     
     def crcl_range_display(self, obj):
         return f"{obj.crcl_min}-{obj.crcl_max}"
     crcl_range_display.short_description = 'CrCl Range'
+    
+    def route_display(self, obj):
+        if isinstance(obj.route, list):
+            return ', '.join(obj.route)
+        return str(obj.route)
+    route_display.short_description = 'Routes'
     
     fieldsets = (
         ('Basic Information', {
