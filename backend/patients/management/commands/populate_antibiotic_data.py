@@ -67,27 +67,29 @@ class Command(BaseCommand):
             if created:
                 self.stdout.write(f'Linked {pathogen.name} to {severity.level}')
 
-        # Create sample antibiotic dosing guidelines
+        # Create sample antibiotic dosing guidelines with JSONField routes
         dosing_data = [
+            # Ciprofloxacin - can be given both PO and IV
             {
                 'antibiotic': 'Ciprofloxacin',
                 'crcl_min': 60.0,
                 'crcl_max': 150.0,
-                'dose': '500mg',
-                'route': 'PO',
+                'dose': '500mg PO / 400mg IV',
+                'route': ['PO', 'IV'],  # Multiple routes
                 'interval': 'q12h',
-                'remark': 'First-line treatment for uncomplicated pyelonephritis',
+                'remark': 'Can be given orally or IV. Adjust dose based on route.',
                 'dialysis_type': 'none',
                 'patient_type': 'adult'
             },
+            # Reduced dose for renal impairment
             {
                 'antibiotic': 'Ciprofloxacin',
                 'crcl_min': 30.0,
                 'crcl_max': 59.0,
-                'dose': '250mg',
-                'route': 'PO',
+                'dose': '250mg PO / 200mg IV',
+                'route': ['PO', 'IV'],  # Multiple routes
                 'interval': 'q12h',
-                'remark': 'Reduced dose for moderate renal impairment',
+                'remark': 'Reduced dose for moderate renal impairment. Can be given orally or IV.',
                 'dialysis_type': 'none',
                 'patient_type': 'adult'
             },
@@ -95,10 +97,10 @@ class Command(BaseCommand):
                 'antibiotic': 'Levofloxacin',
                 'crcl_min': 50.0,
                 'crcl_max': 150.0,
-                'dose': '750mg',
-                'route': 'PO',
+                'dose': '750mg PO / 750mg IV',
+                'route': ['PO', 'IV'],  # Multiple routes
                 'interval': 'q24h',
-                'remark': 'Alternative fluoroquinolone for pyelonephritis',
+                'remark': 'Alternative fluoroquinolone, available in oral and IV forms',
                 'dialysis_type': 'none',
                 'patient_type': 'adult'
             },
@@ -107,9 +109,9 @@ class Command(BaseCommand):
                 'crcl_min': 10.0,
                 'crcl_max': 150.0,
                 'dose': '1-2g',
-                'route': 'IV',
+                'route': ['IV'],  # IV only
                 'interval': 'q24h',
-                'remark': 'Broad-spectrum cephalosporin, no dose adjustment needed',
+                'remark': 'Broad-spectrum cephalosporin, IV only',
                 'dialysis_type': 'none',
                 'patient_type': 'adult'
             },
@@ -118,9 +120,9 @@ class Command(BaseCommand):
                 'crcl_min': 60.0,
                 'crcl_max': 150.0,
                 'dose': '160/800mg',
-                'route': 'PO',
+                'route': ['PO'],  # PO only
                 'interval': 'q12h',
-                'remark': 'Alternative oral option if fluoroquinolone resistance',
+                'remark': 'Oral alternative if fluoroquinolone resistance',
                 'dialysis_type': 'none',
                 'patient_type': 'adult'
             },
@@ -130,7 +132,7 @@ class Command(BaseCommand):
                 'crcl_min': 60.0,
                 'crcl_max': 150.0,
                 'dose': '50-75 mg/kg',
-                'route': 'IV',
+                'route': ['IV'],  # IV only
                 'interval': 'q24h',
                 'remark': 'Pediatric dose for pyelonephritis (max 2g/day)',
                 'dialysis_type': 'none',
@@ -141,7 +143,7 @@ class Command(BaseCommand):
                 'crcl_min': 60.0,
                 'crcl_max': 150.0,
                 'dose': '25-50 mg/kg',
-                'route': 'PO',
+                'route': ['PO'],  # PO only
                 'interval': 'q6h',
                 'remark': 'Pediatric oral option for uncomplicated UTI',
                 'dialysis_type': 'none',
@@ -152,7 +154,7 @@ class Command(BaseCommand):
                 'crcl_min': 60.0,
                 'crcl_max': 150.0,
                 'dose': '6-12 mg/kg TMP',
-                'route': 'PO',
+                'route': ['PO'],  # PO only
                 'interval': 'q12h',
                 'remark': 'Pediatric dose based on trimethoprim component',
                 'dialysis_type': 'none',

@@ -276,7 +276,7 @@ class AntibioticDosing(models.Model):
     
     # Dosing information
     dose = models.CharField(max_length=200, help_text="Dose (e.g., '500mg', '1-2g')")
-    route = models.CharField(max_length=10, choices=ROUTE_CHOICES, help_text="Administration route")
+    route = models.JSONField(default=list, help_text="Administration routes (e.g., ['PO', 'IV'])")
     interval = models.CharField(max_length=50, help_text="Dosing interval (e.g., 'q12h', 'q8h')")
     
     # Additional information
