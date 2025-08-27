@@ -35,6 +35,14 @@ class AntibioticRecommendationEngine:
         'upper urinary tract infection': 'Pyelonephritis',
         'upper uti': 'Pyelonephritis',
         
+        # Urinary tract infection variations (including common misspellings)
+        'urinary tract infection': 'Pyelonephritis',
+        'urinary track infection': 'Pyelonephritis',  # Common misspelling
+        'uti': 'Pyelonephritis',
+        'urinary infection': 'Pyelonephritis',
+        'bladder infection': 'Pyelonephritis',
+        'cystitis': 'Pyelonephritis',
+        
         # Pneumonia variations
         'pneumonia': 'Pneumonia, community-acquired',
         'community-acquired pneumonia': 'Pneumonia, community-acquired',
