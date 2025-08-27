@@ -651,8 +651,8 @@ class AntibioticRecommendationEngine:
         # Deduplicate by antibiotic name - keep only the highest scoring instance of each antibiotic
         deduplicated_recommendations = self._deduplicate_by_antibiotic_name(formatted_recommendations)
         
-        # Filter to top 5 most medically appropriate
-        top_recommendations = deduplicated_recommendations[:5]
+        # Filter to top 3 most medically appropriate
+        top_recommendations = deduplicated_recommendations[:3]
         
         # Update ranks for final recommendations
         for i, rec in enumerate(top_recommendations, 1):
@@ -666,6 +666,46 @@ class AntibioticRecommendationEngine:
                 rec['clinical_priority'] = 'alternative'
         
         return top_recommendations
+    
+    def _deduplicate_by_antibiotic_name(self, recommendations: List[Dict]) -> List[Dict]:
+        """Remove duplicate antibiotics, keeping only the highest scoring instance"""
+        seen_antibiotics = {}
+        deduplicated = []
+        
+        for rec in recommendations:
+            antibiotic_name = rec['antibiotic_name']
+            
+            # Extract base antibiotic name (remove dosage info for better deduplication)
+            base_name = self._extract_base_antibiotic_name(antibiotic_name)
+            
+            # If we haven't seen this antibiotic or this one has a higher score
+            if (base_name not in seen_antibiotics or 
+                rec['preference_score'] > seen_antibiotics[base_name]['preference_score']):
+                seen_antibiotics[base_name] = rec
+        
+        # Convert back to list and maintain sorted order
+        for rec in recommendations:
+            base_name = self._extract_base_antibiotic_name(rec['antibiotic_name'])
+            if base_name in seen_antibiotics and rec == seen_antibiotics[base_name]:
+                deduplicated.append(rec)
+        
+        return deduplicated
+    
+    def _extract_base_antibiotic_name(self, full_name: str) -> str:
+        """Extract base antibiotic name without dosage information"""
+        import re
+        
+        # Remove common dosage patterns
+        # Pattern 1: Simple dosages like "750mg", "500mg", "1.2 g", "3 g"
+        base_name = re.sub(r'\s+\d+(\.\d+)?\s*(mg|g|mcg|µg)\b.*$', '', full_name.strip())
+        
+        # Pattern 2: Complex dosages like "40-60 mg", "150-200 or 300-400 mg"
+        base_name = re.sub(r'\s+\d+(-\d+)?(\s+or\s+\d+(-\d+)?)?\s*(mg|g|mcg|µg)\b.*$', '', base_name)
+        
+        # Pattern 3: Dosages at the beginning
+        base_name = re.sub(r'^\d+(\.\d+)?(-\d+(\.\d+)?)?(\s+or\s+\d+(\.\d+)?(-\d+(\.\d+)?)?)?\s*(mg|g|mcg|µg)\s+', '', base_name)
+        
+        return base_name.strip()
     
     def _calculate_preference_score(self, dosing: AntibioticDosing, therapy_type: str) -> int:
         """Enhanced medical preference scoring for clinical appropriateness"""
@@ -875,7 +915,7 @@ class AntibioticRecommendationEngine:
             # Get general recommendations for the condition without pathogen filtering
             general_dosings = AntibioticDosing.objects.filter(
                 condition=self.matched_condition
-            ).distinct()[:5]  # Get top 5 general recommendations
+            ).distinct()[:3]  # Get top 3 general recommendations
             
             for dosing in general_dosings:
                 fallback_recommendations.append({
