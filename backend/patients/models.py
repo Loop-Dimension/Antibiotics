@@ -278,6 +278,7 @@ class AntibioticDosing(models.Model):
     dose = models.CharField(max_length=200, help_text="Dose (e.g., '500mg', '1-2g')")
     route = models.JSONField(default=list, help_text="Administration routes (e.g., ['PO', 'IV'])")
     interval = models.CharField(max_length=50, help_text="Dosing interval (e.g., 'q12h', 'q8h')")
+    duration = models.CharField(max_length=50, blank=True, help_text="Treatment duration (e.g., '7d', '10-14d')")
     
     # Additional information
     remark = models.TextField(blank=True, help_text="Additional dosing remarks or considerations")
@@ -289,7 +290,7 @@ class AntibioticDosing(models.Model):
     
     class Meta:
         db_table = 'antibiotic_dosing'
-        unique_together = ['antibiotic', 'condition', 'severity', 'crcl_min', 'crcl_max', 'dialysis_type', 'patient_type']
+        unique_together = ['antibiotic', 'condition', 'severity', 'crcl_min', 'crcl_max', 'dialysis_type', 'patient_type', 'dose', 'interval']
         ordering = ['antibiotic', 'condition', 'severity__severity_order']
     
     def __str__(self):

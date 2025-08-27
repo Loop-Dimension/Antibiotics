@@ -136,7 +136,7 @@ class SeverityPathogenAdmin(admin.ModelAdmin):
 
 @admin.register(AntibioticDosing)
 class AntibioticDosingAdmin(admin.ModelAdmin):
-    list_display = ['antibiotic', 'condition', 'severity', 'crcl_range_display', 'dose', 'route_display', 'patient_type']
+    list_display = ['antibiotic', 'condition', 'severity', 'crcl_range_display', 'dose', 'route_display', 'duration', 'patient_type']
     list_filter = ['patient_type', 'dialysis_type', 'condition', 'severity__severity_order']
     search_fields = ['antibiotic', 'dose', 'condition__name']
     filter_horizontal = ['pathogens']
@@ -159,7 +159,7 @@ class AntibioticDosingAdmin(admin.ModelAdmin):
             'fields': ('crcl_min', 'crcl_max', 'dialysis_type')
         }),
         ('Dosing Information', {
-            'fields': ('dose', 'route', 'interval')
+            'fields': ('dose', 'route', 'interval', 'duration')
         }),
         ('Target Pathogens', {
             'fields': ('pathogens',)
