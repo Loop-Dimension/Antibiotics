@@ -10,6 +10,7 @@ import logging
 from .models import Patient, CultureTest, Medication, AntibioticDosing
 from .serializers import PatientSerializer, CultureTestSerializer, MedicationSerializer
 from .antibiotic_service import AntibioticRecommendationService
+from .recommendation_engine import AntibioticRecommendationEngine
 
 logger = logging.getLogger(__name__)
 
@@ -510,71 +511,94 @@ class PatientViewSet(viewsets.ModelViewSet):
         }
         return Response(lab_data)
     
+
+
+    @permission_classes([AllowAny])
     @action(detail=True, methods=['get'])
-    @permission_classes([AllowAny])  # Allow testing without authentication
-    def antibiotic_recommendations(self, request, pk=None):
-        """Get AI-powered antibiotic recommendations for a specific patient"""
+    def clinical_recommendations(self, request, pk=None):
+        """Get clinical decision support recommendations using the new engine"""
         try:
             patient = self.get_object()
+            logger.info(f"Getting clinical recommendations for patient {patient.patient_id}")
             
-            # Get recommendations using improved service
-            result = AntibioticRecommendationService.get_recommendations_for_patient(patient)
+            # Initialize the recommendation engine
+            engine = AntibioticRecommendationEngine()
             
-            # Extract data from new response format
+            # Get recommendations
+            result = engine.get_recommendations(patient)
+            logger.info(f"Engine returned result: {result.get('success', False)}")
+            
+            # Check if successful
+            if not result.get('success', False):
+                error_msg = result.get('error', 'Unknown error during recommendation generation')
+                logger.error(f"Recommendation engine failed for patient {patient.patient_id}: {error_msg}")
+                
+                return Response({
+                    'patient_id': patient.patient_id,
+                    'patient_name': patient.name,
+                    'success': False,
+                    'error': 'Failed to generate clinical recommendations',
+                    'details': error_msg,
+                    'status': 'error',
+                    'recommendations': [],
+                    'total_matches': 0,
+                    'message': 'Unable to generate recommendations due to system error'
+                }, status=500)
+            
+            # Format response for the frontend
             recommendations = result.get('recommendations', [])
-            message = result.get('message', 'Recommendations generated successfully')
-            status = result.get('status', 'success')
-            current_antibiotic_analysis = result.get('current_antibiotic_analysis', None)
-            
-            # Clean up current antibiotic analysis for JSON serialization
-            if current_antibiotic_analysis and current_antibiotic_analysis.get('best_match'):
-                # Remove the raw antibiotic object that's not JSON serializable
-                if 'antibiotic' in current_antibiotic_analysis['best_match']:
-                    del current_antibiotic_analysis['best_match']['antibiotic']
-            
             response_data = {
                 'patient_id': patient.patient_id,
                 'patient_name': patient.name,
-                'current_antibiotic': patient.antibiotics if hasattr(patient, 'antibiotics') else None,
-                'current_antibiotic_analysis': current_antibiotic_analysis,
+                'success': True,
+                'total_matches': result.get('total_matches', 0),
                 'recommendations': recommendations,
-                'message': message,
-                'status': status,
-                'patient_data': {
-                    'crcl': float(patient.cockcroft_gault_crcl) if patient.cockcroft_gault_crcl else None,
-                    'pathogen': patient.pathogen,
-                    'diagnosis': patient.diagnosis1,
-                    'allergies': patient.allergies,
-                    'age': patient.age,
-                    'weight': float(patient.body_weight) if patient.body_weight else None,
-                    'temperature': float(patient.body_temperature) if patient.body_temperature else None,
-                    'wbc': float(patient.wbc) if patient.wbc else None,
-                    'crp': float(patient.crp) if patient.crp else None
-                },
+                'patient_summary': result.get('patient_summary', {}),
+                'filter_steps': result.get('filter_steps', []),
+                'status': 'success',
+                'message': f'Generated {len(recommendations)} clinical recommendations',
                 'timestamp': patient.updated_at.isoformat() if hasattr(patient, 'updated_at') else None
             }
             
-            # Set appropriate HTTP status based on result
-            http_status = 200
-            if status == 'no_match':
-                http_status = 200  # Still successful, just no matches
-            elif status == 'error':
-                http_status = 400
-            elif status == 'emergency_fallback':
-                http_status = 500
-                
-            return Response(response_data, status=http_status)
+            # Add patient context for reference
+            response_data['patient_context'] = {
+                'age': patient.age,
+                'diagnosis': patient.diagnosis1,
+                'pathogen': patient.pathogen,
+                'allergies': patient.allergies,
+                'current_antibiotic': patient.antibiotics,
+                'crcl': float(patient.cockcroft_gault_crcl) if patient.cockcroft_gault_crcl else None,
+                'weight': float(patient.body_weight) if patient.body_weight else None,
+                'temperature': float(patient.body_temperature) if patient.body_temperature else None,
+                'wbc': float(patient.wbc) if patient.wbc else None,
+                'crp': float(patient.crp) if patient.crp else None
+            }
             
-        except Exception as e:
-            # Handle any unexpected errors
+            # Log successful response
+            logger.info(f"Successfully generated {len(recommendations)} recommendations for patient {patient.patient_id}")
+            
+            return Response(response_data, status=200)
+            
+        except Patient.DoesNotExist:
+            logger.error(f"Patient {pk} not found")
             return Response({
                 'patient_id': pk,
-                'patient_name': 'Unknown',
-                'recommendations': [],
-                'message': f'Error retrieving recommendations: {str(e)}',
+                'error': 'Patient not found',
+                'details': f'No patient exists with ID {pk}',
+                'status': 'not_found',
+                'success': False
+            }, status=404)
+            
+        except Exception as e:
+            logger.error(f"Unexpected error in clinical recommendations for patient {pk}: {str(e)}", exc_info=True)
+            return Response({
+                'patient_id': pk,
+                'error': 'System error while generating recommendations',
+                'details': f'An unexpected error occurred: {str(e)}',
                 'status': 'system_error',
-                'patient_data': {},
-                'timestamp': None
+                'success': False,
+                'recommendations': [],
+                'total_matches': 0
             }, status=500)
 
 

@@ -4,11 +4,12 @@ import { patientsAPI } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
-const Dashboard = () => {
+const ClinicalDashboard = () => {
   const { patientId } = useParams();
   const navigate = useNavigate();
   const [patientData, setPatientData] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
+  const [recommendationData, setRecommendationData] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -51,12 +52,25 @@ const Dashboard = () => {
   const fetchAIRecommendations = async (id) => {
     setRecommendationsLoading(true);
     try {
-      const response = await patientsAPI.getAntibioticRecommendations(id);
-      setRecommendations(response.data.recommendations || []);
+      const response = await patientsAPI.getClinicalRecommendations(id);
+      const data = response.data;
+      
+      if (data.success && data.recommendations) {
+        setRecommendations(data.recommendations);
+        setRecommendationData(data); // Store full response for analysis display
+      } else {
+        console.warn('No recommendations returned:', data.error || data.details);
+        setRecommendations([]);
+        setRecommendationData(data);
+      }
     } catch (error) {
-      console.error('Error fetching recommended regimen:', error);
-      // Use fallback recommendations if API fails
+      console.error('Error fetching clinical recommendations:', error);
       setRecommendations([]);
+      setRecommendationData({
+        success: false,
+        error: 'Failed to fetch recommendations',
+        details: error.response?.data?.details || error.message
+      });
     }
     setRecommendationsLoading(false);
   };
@@ -161,7 +175,7 @@ const Dashboard = () => {
               onClick={goToHomeDashboard}
               className="text-2xl font-bold text-gray-900 cursor-pointer hover:text-blue-600"
             >
-              ImpactUs Antibiotic Advisor
+              Clinical Decision Support System
             </h1>
             {patientId && (
               <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-md">
@@ -483,43 +497,120 @@ const Dashboard = () => {
                   </div>
                 ) : recommendations.length > 0 ? (
                   <div className="space-y-4">
-                    {recommendations.map((rec, index) => (
+                    {recommendations.slice(0, 5).map((rec, index) => (
                       <div key={index} className={`border rounded-lg p-4 ${index === 0 ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
                         <div className="flex items-start justify-between mb-2">
                           <div className="font-semibold text-lg text-gray-900">{rec.antibiotic}</div>
-                          {index === 0 && (
-                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                              Recommended
-                            </span>
-                          )}
-                          {rec.crcl_adjusted && (
-                            <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
-                              CrCl Adjusted
-                            </span>
-                          )}
+                          <div className="flex space-x-2">
+                            {index === 0 && (
+                              <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                                Top Choice
+                              </span>
+                            )}
+                            {rec.preference_score && (
+                              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                Score: {rec.preference_score}
+                              </span>
+                            )}
+                            {rec.therapy_type === 'targeted' && (
+                              <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
+                                Targeted
+                              </span>
+                            )}
+                            {rec.therapy_type === 'empirical' && (
+                              <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
+                                Empirical
+                              </span>
+                            )}
+                          </div>
                         </div>
+                        
                         <div className="grid grid-cols-2 gap-4 mb-3">
                           <div>
                             <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Dosing</label>
-                            <div className="text-sm font-medium text-gray-900">{rec.dose}</div>
-                            <div className="text-xs text-gray-600">{rec.route} {rec.interval}</div>
+                            <div className="text-sm font-medium text-gray-900">{rec.dose || 'See guidelines'}</div>
+                            <div className="text-xs text-gray-600">
+                              {rec.route || rec.routes_array?.join(', ') || 'Route not specified'}
+                              {rec.interval && ` • ${rec.interval}`}
+                            </div>
                           </div>
                           <div>
                             <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Duration</label>
-                            <div className="text-sm font-medium text-gray-900">{rec.duration}</div>
+                            <div className="text-sm font-medium text-gray-900">{rec.duration || 'Per guidelines'}</div>
+                            {rec.renal_adjustment && rec.renal_adjustment !== 'No renal adjustment needed' && (
+                              <div className="text-xs text-orange-600 font-medium">⚠ {rec.renal_adjustment}</div>
+                            )}
                           </div>
                         </div>
-                        <div>
-                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Rationale</label>
-                          <div className="text-sm text-gray-700">{rec.rationale}</div>
-                        </div>
+                        
+                        {/* Pathogen Coverage */}
+                        {rec.pathogen_coverage && rec.pathogen_coverage.length > 0 && (
+                          <div className="mb-3">
+                            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Pathogen Coverage</label>
+                            <div className="text-xs text-gray-600 mt-1">
+                              {rec.pathogen_coverage.slice(0, 3).join(', ')}
+                              {rec.pathogen_coverage.length > 3 && ` +${rec.pathogen_coverage.length - 3} more`}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Clinical Notes */}
+                        {rec.clinical_notes && rec.clinical_notes.length > 0 && (
+                          <div>
+                            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Clinical Notes</label>
+                            <div className="text-sm text-gray-700 space-y-1">
+                              {rec.clinical_notes.map((note, noteIndex) => (
+                                <div key={noteIndex} className="text-xs">• {note}</div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Fallback to rationale if available (old format) */}
+                        {!rec.clinical_notes && rec.rationale && (
+                          <div>
+                            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Rationale</label>
+                            <div className="text-sm text-gray-700">{rec.rationale}</div>
+                          </div>
+                        )}
                       </div>
                     ))}
+                    
+                    {/* Show truncation message if more than 5 recommendations */}
+                    {recommendations.length > 5 && (
+                      <div className="text-center text-sm text-gray-500 py-2">
+                        Showing top 5 of {recommendations.length} recommendations
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <div className="text-gray-500">No recommended regimen available</div>
-                    <div className="text-xs text-gray-400 mt-1">Click refresh to fetch recommendations</div>
+                    {recommendationData?.is_fallback ? (
+                      <div>
+                        <div className="text-amber-600 font-medium">Limited Recommendations Available</div>
+                        <div className="text-sm text-gray-600 mt-2 max-w-md mx-auto">
+                          {recommendationData.message || "Showing general empirical therapy options. Consider pathogen-specific therapy when culture results are available."}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-2">
+                          Based on condition: {recommendationData.patient_summary?.matched_condition || "general guidelines"}
+                        </div>
+                      </div>
+                    ) : recommendationData?.success === false ? (
+                      <div>
+                        <div className="text-red-600 font-medium">No Clinical Recommendations Found</div>
+                        <div className="text-sm text-gray-600 mt-2">
+                          {recommendationData.error || recommendationData.details || "Unable to generate recommendations for this patient"}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-2">
+                          Please verify patient diagnosis and pathogen information
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="text-gray-500">No recommended regimen available</div>
+                        <div className="text-xs text-gray-400 mt-1">Click refresh to fetch recommendations</div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -541,8 +632,8 @@ const Dashboard = () => {
         <div className="p-6">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to ImpactUs Antibiotic Advisor</h2>
-              <p className="text-gray-600">Select a patient to view detailed recommendations or start with a new case.</p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Clinical Decision Support System</h2>
+              <p className="text-gray-600">Evidence-based antibiotic recommendations tailored to patient clinical data.</p>
             </div>
 
             {/* Quick Actions */}
@@ -613,4 +704,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default ClinicalDashboard;

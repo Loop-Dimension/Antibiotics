@@ -80,7 +80,7 @@ export const patientsAPI = {
   getPatientsLegacy: (page = 1, pageSize = 12) => api.get(`/api/patients/?page=${page}&page_size=${pageSize}`),
   
   getPatient: (id) => api.get(`/api/patients/${id}/`),
-  getAntibioticRecommendations: (id) => api.get(`/api/patients/${id}/antibiotic_recommendations/`),
+  getClinicalRecommendations: (id) => api.get(`/api/patients/${id}/clinical_recommendations/`),
   
   // Enhanced search with additional options
   searchPatients: (query, limit = 10) => {
