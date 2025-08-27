@@ -290,7 +290,8 @@ class AntibioticDosing(models.Model):
     
     class Meta:
         db_table = 'antibiotic_dosing'
-        unique_together = ['antibiotic', 'condition', 'severity', 'crcl_min', 'crcl_max', 'dialysis_type', 'patient_type', 'dose', 'interval']
+        # Remove the unique constraint to allow more flexible dosing guidelines
+        # unique_together = ['antibiotic', 'condition', 'severity', 'crcl_min', 'crcl_max', 'dialysis_type', 'patient_type', 'dose', 'interval']
         ordering = ['antibiotic', 'condition', 'severity__severity_order']
     
     def __str__(self):
