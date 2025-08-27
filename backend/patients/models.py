@@ -11,42 +11,48 @@ class Patient(models.Model):
         ('O', 'Other'),
     ]
     
-    # Basic patient information
+    # Essential patient information - REQUIRED
     patient_id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255, default="Patient", blank=True)
-    gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
-    date_recorded = models.DateField()
-    age = models.PositiveIntegerField(validators=[MinValueValidator(0), MaxValueValidator(150)])
+    name = models.CharField(max_length=255, help_text="Patient name")
+    date_recorded = models.DateField(help_text="Date when patient data was recorded")
     
-    # Physical measurements
-    body_weight = models.DecimalField(max_digits=6, decimal_places=2, help_text="Weight in kg (BW)")
-    height = models.DecimalField(max_digits=6, decimal_places=2, help_text="Height in cm")
+    # Demographics - Age required, Gender optional (sometimes unknown)
+    age = models.PositiveIntegerField(validators=[MinValueValidator(0), MaxValueValidator(150)], help_text="Patient age")
+    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True, null=True, help_text="Patient gender")
     
-    # Lab Test Results
-    wbc = models.DecimalField(max_digits=10, decimal_places=2, help_text="White Blood Cell count")
-    hb = models.DecimalField(max_digits=5, decimal_places=2, help_text="Hemoglobin level (Hb)")
-    platelet = models.DecimalField(max_digits=10, decimal_places=0, help_text="Platelet count (PLT)")
-    ast = models.DecimalField(max_digits=6, decimal_places=2, help_text="Aspartate Aminotransferase (IU/L)")
-    alt = models.DecimalField(max_digits=6, decimal_places=2, help_text="Alanine Aminotransferase (IU/L)")
-    scr = models.DecimalField(max_digits=5, decimal_places=2, help_text="Serum Creatinine (mg/dL)")
-    cockcroft_gault_crcl = models.DecimalField(max_digits=12, decimal_places=8, help_text="Cockcroft-Gault Creatinine Clearance")
-    crp = models.DecimalField(max_digits=8, decimal_places=2, help_text="C-reactive Protein (mg/L)")
+    # Physical measurements - Weight required for dosing, Height optional
+    body_weight = models.DecimalField(max_digits=6, decimal_places=2, help_text="Weight in kg (required for antibiotic dosing)")
+    height = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True, help_text="Height in cm (optional)")
     
-    # Diagnoses
-    diagnosis1 = models.CharField(max_length=255, help_text="Primary diagnosis")
+    # Essential clinical data - Required for antibiotic decisions
+    diagnosis1 = models.CharField(max_length=255, help_text="Primary diagnosis (required)")
+    body_temperature = models.DecimalField(max_digits=4, decimal_places=1, validators=[MinValueValidator(30), MaxValueValidator(50)], help_text="Temperature in Celsius")
+    
+    # Essential lab values - Required for antibiotic selection and dosing
+    scr = models.DecimalField(max_digits=5, decimal_places=2, help_text="Serum Creatinine (mg/dL) - required for dosing")
+    cockcroft_gault_crcl = models.DecimalField(max_digits=12, decimal_places=2, help_text="Creatinine Clearance (mL/min) - required for dosing")
+    
+    # Important lab values - Should be available but may be optional
+    wbc = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, help_text="White Blood Cell count")
+    crp = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True, help_text="C-reactive Protein (mg/L)")
+    
+    # Additional lab values - Optional but useful
+    hb = models.DecimalField(max_digits=5, decimal_places=1, blank=True, null=True, help_text="Hemoglobin level (g/dL)")
+    platelet = models.DecimalField(max_digits=10, decimal_places=0, blank=True, null=True, help_text="Platelet count")
+    ast = models.DecimalField(max_digits=6, decimal_places=1, blank=True, null=True, help_text="AST (IU/L)")
+    alt = models.DecimalField(max_digits=6, decimal_places=1, blank=True, null=True, help_text="ALT (IU/L)")
+    
+    # Clinical information - Important for antibiotic selection
+    pathogen = models.CharField(max_length=500, blank=True, default="Unknown", help_text="Identified pathogen (use 'Unknown' if not identified)")
+    sample_type = models.CharField(max_length=100, blank=True, default="Not specified", help_text="Sample type (blood, urine, sputum, etc.)")
+    
+    # Current treatment - Important for recommendations
+    antibiotics = models.CharField(max_length=500, blank=True, default="None", help_text="Current antibiotic treatment")
+    allergies = models.CharField(max_length=500, blank=True, default="None", help_text="Patient allergies")
+    
+    # Secondary information - Optional
     diagnosis2 = models.CharField(max_length=255, blank=True, null=True, help_text="Secondary diagnosis")
-    
-    # Culture and pathogen information
-    pathogen = models.CharField(max_length=500, help_text="Identified pathogen")
-    sample_type = models.CharField(max_length=100, help_text="Sample type (e.g., urine, blood, sputum)")
-    
-    # Current medications and antibiotics
-    antibiotics = models.CharField(max_length=500, help_text="Current antibiotic treatment")
-    
-    # Additional fields for compatibility
-    allergies = models.CharField(max_length=500, default="None", help_text="Patient allergies")
-    body_temperature = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True, help_text="Temperature in Celsius")
-    current_medications = models.TextField(blank=True, null=True, help_text="List of current medications")
+    current_medications = models.TextField(blank=True, null=True, help_text="Other current medications")
     
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
@@ -57,7 +63,7 @@ class Patient(models.Model):
         ordering = ['-date_recorded', '-created_at']
     
     def __str__(self):
-        return f"Patient {self.patient_id} - {self.get_gender_display()}, Age {self.age} - {self.diagnosis1}"
+        return f"Patient {self.patient_id} - {self.name}, Age {self.age} - {self.diagnosis1}"
     
     @property
     def bmi(self):

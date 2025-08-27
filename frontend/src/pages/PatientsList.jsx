@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { patientsAPI } from './api';
-import { useAuth } from './AuthContext';
-import { useEMR } from './EMRContext';
-import EMRAuthModal from './EMRAuthModal';
+import { patientsAPI } from '../api';
+import { useAuth } from '../contexts/AuthContext';
 
 const PatientsList = () => {
   const navigate = useNavigate();
@@ -16,9 +14,7 @@ const PatientsList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
-  const [showEMRAuth, setShowEMRAuth] = useState(false);
   const { user, logout } = useAuth();
-  const { emrSession, openPatientRecord, createMedicationOrder } = useEMR();
   const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
@@ -98,53 +94,8 @@ const PatientsList = () => {
     await logout();
   };
 
-  const handleOpenEMR = () => {
-    if (!emrSession.authenticated) {
-      setShowEMRAuth(true);
-    } else {
-      alert(`EMR System (${emrSession.emrSystem}) is already connected!`);
-    }
-  };
-
-  const handleSendOrderToEMR = async (patientId) => {
-    if (!emrSession.authenticated) {
-      setShowEMRAuth(true);
-      return;
-    }
-
-    // Create a sample medication order for demonstration
-    const orderData = {
-      patient_id: patientId,
-      medication_name: 'Levofloxacin',
-      dosage: '750 mg',
-      frequency: 'Once daily',
-      duration: '5 days',
-      instructions: 'Take with plenty of water. Complete the full course.',
-      auto_send: true
-    };
-
-    const result = await createMedicationOrder(orderData);
-    
-    if (result.success) {
-      alert(`Medication order sent to EMR successfully! Order ID: ${result.data.id}`);
-    } else {
-      alert(`Failed to send order to EMR: ${result.message}`);
-    }
-  };
-
-  const handleOpenPatientInEMR = async (patientId) => {
-    if (!emrSession.authenticated) {
-      setShowEMRAuth(true);
-      return;
-    }
-
-    const result = await openPatientRecord(patientId);
-    
-    if (result.success) {
-      alert(result.message);
-    } else {
-      alert(`Failed to open patient record: ${result.message}`);
-    }
+  const handleAddPatient = () => {
+    navigate('/add-patient');
   };
 
   const goToPage = (page) => {
@@ -222,11 +173,6 @@ const PatientsList = () => {
             <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-md">
               {totalCount} Patients
             </span>
-            {emrSession.authenticated && (
-              <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded-md">
-                EMR Connected: {emrSession.emrSystem}
-              </span>
-            )}
           </div>
           <div className="flex items-center space-x-4">
             <span className="text-sm text-gray-600">
@@ -271,14 +217,10 @@ const PatientsList = () => {
               )}
             </div>
             <button 
-              onClick={handleOpenEMR}
-              className={`px-4 py-2 rounded-md font-medium ${
-                emrSession.authenticated 
-                  ? 'bg-green-600 text-white hover:bg-green-700' 
-                  : 'bg-gray-800 text-white hover:bg-gray-900'
-              }`}
+              onClick={handleAddPatient}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700"
             >
-              {emrSession.authenticated ? 'EMR Connected' : 'Connect EMR'}
+              Add Patient
             </button>
             <button 
               onClick={handleLogout}
@@ -402,28 +344,15 @@ const PatientsList = () => {
                     >
                       View Details
                     </button>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenPatientInEMR(patient.patient_id);
-                        }}
-                        className="text-xs bg-gray-600 text-white py-1.5 px-2 rounded-md font-medium hover:bg-gray-700 transition-colors"
-                        title="Open in EMR"
-                      >
-                        Open EMR
-                      </button>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSendOrderToEMR(patient.patient_id);
-                        }}
-                        className="text-xs bg-green-600 text-white py-1.5 px-2 rounded-md font-medium hover:bg-green-700 transition-colors"
-                        title="Send Order to EMR"
-                      >
-                        Send Order
-                      </button>
-                    </div>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/edit-patient/${patient.patient_id}`);
+                      }}
+                      className="w-full text-sm bg-green-600 text-white py-2 px-4 rounded-md font-medium hover:bg-green-700 transition-colors"
+                    >
+                      Edit Patient
+                    </button>
                   </div>
                 </div>
               </div>
@@ -432,12 +361,12 @@ const PatientsList = () => {
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between bg-white px-6 py-4 rounded-lg border border-gray-200">
-          <div className="text-sm text-gray-700">
+        <div className="bg-white px-6 py-4 rounded-lg border border-gray-200">
+          <div className="text-sm text-gray-700 text-center mb-4">
             Showing {((currentPage - 1) * 12) + 1} to {Math.min(currentPage * 12, totalCount)} of {totalCount} patients
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center justify-center space-x-2">
             <button
               onClick={() => goToPage(1)}
               disabled={currentPage === 1}
@@ -503,16 +432,6 @@ const PatientsList = () => {
           </div>
         </div>
       </div>
-
-      {/* EMR Authentication Modal */}
-      <EMRAuthModal 
-        isOpen={showEMRAuth} 
-        onClose={() => setShowEMRAuth(false)}
-        onAuthenticated={() => {
-          // Refresh EMR session status
-          // The EMR context will automatically update
-        }}
-      />
     </div>
   );
 };

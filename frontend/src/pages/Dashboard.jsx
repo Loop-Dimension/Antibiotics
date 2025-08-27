@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { patientsAPI } from './api';
-import { useAuth } from './AuthContext';
-import { useEMR } from './EMRContext';
+import { patientsAPI } from '../api';
+import { useAuth } from '../contexts/AuthContext';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
-import EMRAuthModal from './EMRAuthModal';
 
 const Dashboard = () => {
   const { patientId } = useParams();
@@ -17,9 +15,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showEMRAuth, setShowEMRAuth] = useState(false);
   const { user, logout } = useAuth();
-  const { emrSession, openPatientRecord, createMedicationOrder } = useEMR();
   const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
@@ -147,72 +143,10 @@ const Dashboard = () => {
     }
   };
 
-  const sendOrdersToEMR = async () => {
-    const patientName = patientData?.name || 'Unknown Patient';
-    const patientId = patientData?.patient_id || 'Unknown ID';
-    
-    if (!emrSession.authenticated) {
-      setShowEMRAuth(true);
-      return;
-    }
-
-    // Create recommended medication order from AI results (no hardcoded defaults)
-    let recommendedMedication;
-    if (recommendations && recommendations.length > 0) {
-      const top = recommendations[0];
-      recommendedMedication = {
-        name: top?.antibiotic || 'Unknown',
-        dosage: top?.dose || '',
-        frequency: top?.interval || top?.frequency || '',
-        duration: top?.duration || ''
-      };
-    } else {
-      alert('No AI recommendation available. Please retrieve recommendations first or enter orders manually.');
-      return;
-    }
-
-    const orderData = {
-      patient_id: patientId,
-      medication_name: recommendedMedication.name,
-      dosage: recommendedMedication.dosage,
-      frequency: recommendedMedication.frequency,
-      duration: recommendedMedication.duration,
-      instructions: `Recommended treatment for ${patientData?.diagnosis1 || 'infection'}. Monitor for allergic reactions.`,
-      auto_send: true
-    };
-
-    const result = await createMedicationOrder(orderData);
-    
-    if (result.success) {
-      alert(`Orders sent to EMR successfully for ${patientName} (ID: ${patientId})!\nOrder ID: ${result.data.id}\nMedication: ${recommendedMedication.name} ${recommendedMedication.dosage}`);
-    } else {
-      alert(`Failed to send orders to EMR: ${result.message}`);
-    }
-  };
-
   const handleLogout = async () => {
     await logout();
   };
-
-  const handleOpenEMR = async () => {
-    if (!emrSession.authenticated) {
-      setShowEMRAuth(true);
-      return;
-    }
-
-    if (patientData?.patient_id) {
-      const result = await openPatientRecord(patientData.patient_id);
       
-      if (result.success) {
-        alert(result.message);
-      } else {
-        alert(`Failed to open patient record: ${result.message}`);
-      }
-    } else {
-      alert('No patient selected to open in EMR');
-    }
-  };
-
   const goToHomeDashboard = () => {
     navigate('/');
   };
@@ -232,11 +166,6 @@ const Dashboard = () => {
             {patientId && (
               <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-md">
                 Patient ID: {patientId}
-              </span>
-            )}
-            {emrSession.authenticated && (
-              <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded-md">
-                EMR: {emrSession.emrSystem}
               </span>
             )}
           </div>
@@ -282,16 +211,14 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
-            <button 
-              onClick={handleOpenEMR}
-              className={`px-4 py-2 rounded-md font-medium ${
-                emrSession.authenticated 
-                  ? 'bg-green-600 text-white hover:bg-green-700' 
-                  : 'bg-gray-800 text-white hover:bg-gray-900'
-              }`}
-            >
-              {emrSession.authenticated ? 'Open EMR' : 'Connect EMR'}
-            </button>
+            {patientId && (
+              <button 
+                onClick={() => navigate(`/edit-patient/${patientId}`)}
+                className="bg-green-600 text-white px-4 py-2 rounded-md font-medium hover:bg-green-700"
+              >
+                Edit Patient
+              </button>
+            )}
             <button 
               onClick={handleLogout}
               className="bg-red-600 text-white px-4 py-2 rounded-md font-medium hover:bg-red-700"
@@ -488,13 +415,6 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
-
-            <button 
-              onClick={sendOrdersToEMR}
-              className="w-full bg-gray-800 text-white py-3 px-4 rounded-md font-medium hover:bg-gray-900 transition-colors"
-            >
-              Send Orders to EMR
-            </button>
           </div>
 
           {/* Guidelines Section */}
@@ -511,15 +431,6 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-
-      {/* EMR Authentication Modal */}
-      <EMRAuthModal 
-        isOpen={showEMRAuth} 
-        onClose={() => setShowEMRAuth(false)}
-        onAuthenticated={() => {
-          // EMR context will automatically update
-        }}
-      />
     </div>
   );
 };

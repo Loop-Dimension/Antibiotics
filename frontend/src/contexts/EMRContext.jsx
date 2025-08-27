@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { emrAPI } from './api';
+import { emrAPI } from '../api';
 
 const EMRContext = createContext();
 

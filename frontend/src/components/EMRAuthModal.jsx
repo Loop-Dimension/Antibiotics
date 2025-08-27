@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useEMR } from './EMRContext';
+import { useEMR } from '../contexts/EMRContext';
 
 const EMRAuthModal = ({ isOpen, onClose, onAuthenticated }) => {
   const [username, setUsername] = useState('');
