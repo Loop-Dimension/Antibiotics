@@ -313,159 +313,103 @@ const ClinicalDashboard = () => {
         /* Patient View Layout */
         <div className="flex">
           {/* Left Panel - Patient Information */}
-          <div className="w-1/2 p-6">
-            {/* Patient Overview Card */}
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
+          <div className="w-1/3 p-6">
+            {/* Patient Snapshot Card */}
+            <div className="bg-white rounded-lg border border-red-300 shadow-sm p-4 mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Patient Overview</h2>
+                <h2 className="text-lg font-bold text-gray-900">Patient Snapshot</h2>
                 <div className="flex space-x-2">
-                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                    ID: {patientData.patient_id}
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                    {patientData.patient_id}
                   </span>
-                  {patientData.pathogen && (
-                    <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
+                  {patientData.pathogen && patientData.pathogen !== 'Unknown' && (
+                    <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">
                       Culture +
                     </span>
                   )}
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="space-y-3">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Patient</label>
-                  <div className="text-lg font-semibold text-gray-900">
+                  <label className="text-xs font-medium text-gray-500">Name:</label>
+                  <div className="text-sm font-semibold text-gray-900">
                     {patientData.name}, {patientData.age} {patientData.gender === 'Male' || patientData.gender === 'M' ? '♂' : '♀'}
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Date Recorded</label>
-                  <div className="text-sm text-gray-700">{patientData.date_recorded || 'N/A'}</div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Weight / Height</label>
-                  <div className="text-sm text-gray-700">
-                    {patientData.body_weight || 'N/A'} kg / {patientData.height || 'N/A'} cm
+                  <label className="text-xs font-medium text-gray-500">Allergies:</label>
+                  <div className={`text-sm ${patientData.allergies && patientData.allergies !== 'None' ? 'text-red-600 font-medium' : 'text-gray-700'}`}>
+                    {patientData.allergies || 'None'}
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">BMI</label>
-                  <div className="text-sm text-gray-700">{patientData.bmi || 'N/A'}</div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">CrCl</label>
+                  <label className="text-xs font-medium text-gray-500">CrCl:</label>
                   <div className="text-sm text-gray-700">
                     {patientData.cockcroft_gault_crcl ? parseFloat(patientData.cockcroft_gault_crcl).toFixed(1) : 'N/A'} mL/min
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Allergies</label>
-                  <div className={`text-sm ${patientData.allergies && patientData.allergies !== 'None' ? 'text-red-600 font-medium' : 'text-gray-700'}`}>
-                    {patientData.allergies || 'None'}
+                  <label className="text-xs font-medium text-gray-500">Current Abc:</label>
+                  <div className="text-sm text-gray-700">
+                    {patientData.antibiotics && patientData.antibiotics !== 'None' ? patientData.antibiotics : 'None'}
                   </div>
                 </div>
               </div>
-
-              {/* Current Treatment */}
-              {patientData.antibiotics && patientData.antibiotics !== 'None' && (
-                <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
-                  <label className="text-sm font-medium text-blue-800">Current Antibiotics</label>
-                  <div className="text-sm text-blue-700 font-medium">{patientData.antibiotics}</div>
-                </div>
-              )}
-
-              {/* Diagnosis & Culture */}
-              {(patientData.diagnosis1 || patientData.pathogen) && (
-                <div className="border-t border-gray-200 pt-4">
-                  <label className="text-sm font-medium text-gray-500">Clinical Information</label>
-                  <div className="space-y-2 mt-2">
-                    {patientData.diagnosis1 && (
-                      <div className="text-sm">
-                        <span className="font-medium">Primary Diagnosis:</span> {patientData.diagnosis1}
-                      </div>
-                    )}
-                    {patientData.diagnosis2 && patientData.diagnosis2 !== patientData.diagnosis1 && (
-                      <div className="text-sm">
-                        <span className="font-medium">Secondary Diagnosis:</span> {patientData.diagnosis2}
-                      </div>
-                    )}
-                    {patientData.pathogen && (
-                      <div className="text-sm">
-                        <span className="font-medium">Pathogen:</span> {patientData.pathogen}
-                        {patientData.sample_type && ` (${patientData.sample_type})`}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Vitals & Labs Card */}
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Laboratory Values</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="font-medium text-gray-600">Temperature</span>
-                    <span className={`font-semibold ${patientData.body_temperature && parseFloat(patientData.body_temperature) > 38 ? 'text-red-600' : 'text-gray-900'}`}>
-                      {patientData.body_temperature ? `${patientData.body_temperature}°C` : 'N/A'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="font-medium text-gray-600">WBC</span>
-                    <span className={`font-semibold ${patientData.wbc && (parseFloat(patientData.wbc) > 11000 || parseFloat(patientData.wbc) < 4000) ? 'text-red-600' : 'text-gray-900'}`}>
-                      {patientData.wbc ? `${(parseFloat(patientData.wbc) / 1000).toFixed(1)}k` : 'N/A'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="font-medium text-gray-600">Hemoglobin</span>
-                    <span className="font-semibold text-gray-900">
-                      {patientData.hb ? `${patientData.hb} g/dL` : 'N/A'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="font-medium text-gray-600">Platelet</span>
-                    <span className="font-semibold text-gray-900">
-                      {patientData.platelet ? `${(parseFloat(patientData.platelet) / 1000).toFixed(0)}k` : 'N/A'}
-                    </span>
-                  </div>
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 mb-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Vitals & Labs</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Temp</span>
+                  <span className={`text-sm font-semibold ${patientData.body_temperature && parseFloat(patientData.body_temperature) > 38 ? 'text-red-600' : 'text-gray-900'}`}>
+                    {patientData.body_temperature ? `${patientData.body_temperature}°C` : 'N/A'}
+                  </span>
                 </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="font-medium text-gray-600">AST</span>
-                    <span className="font-semibold text-gray-900">
-                      {patientData.ast ? `${patientData.ast} IU/L` : 'N/A'}
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">WBC</span>
+                  <span className={`text-sm font-semibold ${patientData.wbc && (parseFloat(patientData.wbc) > 11000 || parseFloat(patientData.wbc) < 4000) ? 'text-red-600' : 'text-gray-900'}`}>
+                    {patientData.wbc ? `${(parseFloat(patientData.wbc) / 1000).toFixed(1)}k` : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">CRP</span>
+                  <div className="flex items-center">
+                    <span className={`text-sm font-semibold mr-2 ${patientData.crp && parseFloat(patientData.crp) > 10 ? 'text-red-600' : 'text-gray-900'}`}>
+                      {patientData.crp ? `${parseFloat(patientData.crp).toFixed(0)} mg/L` : 'N/A'}
                     </span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="font-medium text-gray-600">ALT</span>
-                    <span className="font-semibold text-gray-900">
-                      {patientData.alt ? `${patientData.alt} IU/L` : 'N/A'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="font-medium text-gray-600">Creatinine</span>
-                    <span className="font-semibold text-gray-900">
-                      {patientData.scr ? `${patientData.scr} mg/dL` : 'N/A'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="font-medium text-gray-600">CRP</span>
-                    <div className="flex items-center">
-                      <span className={`font-semibold mr-2 ${patientData.crp && parseFloat(patientData.crp) > 10 ? 'text-red-600' : 'text-gray-900'}`}>
-                        {patientData.crp ? `${parseFloat(patientData.crp).toFixed(1)} mg/L` : 'N/A'}
-                      </span>
-                      {patientData.crp && parseFloat(patientData.crp) > 10 && (
-                        <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-                      )}
-                    </div>
+                    {patientData.crp && parseFloat(patientData.crp) > 10 && (
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    )}
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Micro Results Card */}
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Micro Results</h3>
+              {patientData.pathogen && patientData.pathogen !== 'Unknown' ? (
+                <div className="space-y-2">
+                  <div className="text-sm">
+                    <span className="font-medium">Pathogen:</span> {patientData.pathogen}
+                  </div>
+                  {patientData.sample_type && (
+                    <div className="text-sm">
+                      <span className="font-medium">Sample:</span> {patientData.sample_type}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-sm text-gray-500">No culture results yet.</div>
+              )}
             </div>
           </div>
 
           {/* Right Panel - Recommendations */}
-          <div className="w-1/2 p-6">
+          <div className="w-2/3 p-6">
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold text-gray-900">Recommended Regimen</h3>
@@ -482,13 +426,13 @@ const ClinicalDashboard = () => {
                 <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4 flex items-start">
                   <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400 mr-3 mt-0.5 flex-shrink-0" />
                   <div className="text-sm">
-                    <div className="font-medium text-yellow-800">Allergy Alert</div>
-                    <div className="text-yellow-700">Patient is allergic to {patientData.allergies}. Please review alternatives below.</div>
+                    <div className="font-medium text-yellow-800">Allergy Conflict</div>
+                    <div className="text-yellow-700">Patient is allergic to {patientData.allergies}. Avoid β-lactams; consider alternatives below.</div>
                   </div>
                 </div>
               )}
 
-              {/* Recommendations Content */}
+              {/* Recommendations Table */}
               <div className="space-y-4">
                 {recommendationsLoading ? (
                   <div className="text-center py-8">
@@ -496,92 +440,39 @@ const ClinicalDashboard = () => {
                     <div className="text-gray-500 mt-2">Loading recommended regimen...</div>
                   </div>
                 ) : recommendations.length > 0 ? (
-                  <div className="space-y-4">
-                    {recommendations.slice(0, 5).map((rec, index) => (
-                      <div key={index} className={`border rounded-lg p-4 ${index === 0 ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="font-semibold text-lg text-gray-900">{rec.antibiotic}</div>
-                          <div className="flex space-x-2">
-                            {index === 0 && (
-                              <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                                Top Choice
-                              </span>
-                            )}
-                            {rec.preference_score && (
-                              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                                Score: {rec.preference_score}
-                              </span>
-                            )}
-                            {rec.therapy_type === 'targeted' && (
-                              <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
-                                Targeted
-                              </span>
-                            )}
-                            {rec.therapy_type === 'empirical' && (
-                              <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
-                                Empirical
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4 mb-3">
-                          <div>
-                            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Dosing</label>
-                            <div className="text-sm font-medium text-gray-900">{rec.dose || 'See guidelines'}</div>
-                            <div className="text-xs text-gray-600">
-                              {rec.route || rec.routes_array?.join(', ') || 'Route not specified'}
-                              {rec.interval && ` • ${rec.interval}`}
-                            </div>
-                          </div>
-                          <div>
-                            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Duration</label>
-                            <div className="text-sm font-medium text-gray-900">{rec.duration || 'Per guidelines'}</div>
-                            {rec.renal_adjustment && rec.renal_adjustment !== 'No renal adjustment needed' && (
-                              <div className="text-xs text-orange-600 font-medium">⚠ {rec.renal_adjustment}</div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        {/* Pathogen Coverage */}
-                        {rec.pathogen_coverage && rec.pathogen_coverage.length > 0 && (
-                          <div className="mb-3">
-                            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Pathogen Coverage</label>
-                            <div className="text-xs text-gray-600 mt-1">
-                              {rec.pathogen_coverage.slice(0, 3).join(', ')}
-                              {rec.pathogen_coverage.length > 3 && ` +${rec.pathogen_coverage.length - 3} more`}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Clinical Notes */}
-                        {rec.clinical_notes && rec.clinical_notes.length > 0 && (
-                          <div>
-                            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Clinical Notes</label>
-                            <div className="text-sm text-gray-700 space-y-1">
-                              {rec.clinical_notes.map((note, noteIndex) => (
-                                <div key={noteIndex} className="text-xs">• {note}</div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Fallback to rationale if available (old format) */}
-                        {!rec.clinical_notes && rec.rationale && (
-                          <div>
-                            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Rationale</label>
-                            <div className="text-sm text-gray-700">{rec.rationale}</div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    
-                    {/* Show truncation message if more than 5 recommendations */}
-                    {recommendations.length > 5 && (
-                      <div className="text-center text-sm text-gray-500 py-2">
-                        Showing top 5 of {recommendations.length} recommendations
-                      </div>
-                    )}
+                  <div className="overflow-hidden">
+                    <table className="min-w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Antibiotic</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dose</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rationale</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {recommendations.map((rec, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">{rec.antibiotic_name || rec.antibiotic}</div>
+                              <div className="text-xs text-gray-500">{rec.route || rec.routes_array?.join(', ') || 'Not specified'}</div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{rec.dose || 'See guidelines'}</div>
+                              {rec.interval && (
+                                <div className="text-xs text-gray-500">{rec.interval}</div>
+                              )}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{rec.duration || 'Per guidelines'}</div>
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="text-sm text-gray-900">{rec.remark || rec.medical_rationale || 'Evidence-based recommendation'}</div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 ) : (
                   <div className="text-center py-8">
@@ -591,38 +482,22 @@ const ClinicalDashboard = () => {
                         <div className="text-sm text-gray-600 mt-2 max-w-md mx-auto">
                           {recommendationData.message || "Showing general empirical therapy options. Consider pathogen-specific therapy when culture results are available."}
                         </div>
-                        <div className="text-xs text-gray-400 mt-2">
-                          Based on condition: {recommendationData.patient_summary?.matched_condition || "general guidelines"}
-                        </div>
                       </div>
                     ) : recommendationData?.success === false ? (
                       <div>
                         <div className="text-red-600 font-medium">No Clinical Recommendations Found</div>
                         <div className="text-sm text-gray-600 mt-2">
-                          {recommendationData.error || recommendationData.details || "Unable to generate recommendations for this patient"}
-                        </div>
-                        <div className="text-xs text-gray-400 mt-2">
-                          Please verify patient diagnosis and pathogen information
+                          No antibiotic recommendations available for this patient profile.
                         </div>
                       </div>
                     ) : (
                       <div>
-                        <div className="text-gray-500">No recommended regimen available</div>
-                        <div className="text-xs text-gray-400 mt-1">Click refresh to fetch recommendations</div>
+                        <div className="text-gray-600 font-medium">Select a patient to view recommendations</div>
+                        <div className="text-sm text-gray-500 mt-2">Click "Get Recommendations" to load clinical guidance.</div>
                       </div>
                     )}
                   </div>
                 )}
-              </div>
-
-              {/* Guidelines Footer */}
-              <div className="border-t border-gray-200 pt-4 mt-6">
-                <h4 className="font-medium text-gray-900 mb-2">Clinical Guidelines</h4>
-                <div className="text-sm text-gray-600 space-y-1">
-                  <div><strong>Sources:</strong> IDSA Guidelines 2023, Korean Guidelines 2024</div>
-                  <div>Recommendations based on local resistance patterns (updated Aug 2025)</div>
-                  <div>Risk-adjusted for patient comorbidities and renal function</div>
-                </div>
               </div>
             </div>
           </div>

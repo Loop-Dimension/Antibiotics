@@ -656,24 +656,14 @@ class AntibioticRecommendationEngine:
         # Sort by preference score (higher is better) and medical appropriateness
         formatted_recommendations.sort(key=lambda x: (x['preference_score'], x['appropriateness_level']), reverse=True)
         
-        # Deduplicate by antibiotic name - keep only the highest scoring instance of each antibiotic
-        deduplicated_recommendations = self._deduplicate_by_antibiotic_name(formatted_recommendations)
+        # Return ALL recommendations without limiting to top 3
+        all_recommendations = formatted_recommendations
         
-        # Filter to top 3 most medically appropriate
-        top_recommendations = deduplicated_recommendations[:3]
-        
-        # Update ranks for final recommendations
-        for i, rec in enumerate(top_recommendations, 1):
+        # Update ranks for all recommendations
+        for i, rec in enumerate(all_recommendations, 1):
             rec['rank'] = i
-            # Add clinical priority badge
-            if i == 1:
-                rec['clinical_priority'] = 'first_line'
-            elif i <= 2:
-                rec['clinical_priority'] = 'preferred'
-            else:
-                rec['clinical_priority'] = 'alternative'
         
-        return top_recommendations
+        return all_recommendations
     
     def _deduplicate_by_antibiotic_name(self, recommendations: List[Dict]) -> List[Dict]:
         """Remove duplicate antibiotics, keeping only the highest scoring instance"""
@@ -923,7 +913,7 @@ class AntibioticRecommendationEngine:
             # Get general recommendations for the condition without pathogen filtering
             general_dosings = AntibioticDosing.objects.filter(
                 condition=self.matched_condition
-            ).distinct()[:3]  # Get top 3 general recommendations
+            ).distinct()  # Get all general recommendations
             
             for dosing in general_dosings:
                 fallback_recommendations.append({
