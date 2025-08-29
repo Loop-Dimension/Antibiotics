@@ -225,18 +225,15 @@ const PatientsList = () => {
             </span>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-600">
-              Welcome, {user?.first_name} {user?.last_name} ({user?.username})
-            </span>
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search patient by name..."
+                placeholder="Search patient..."
                 value={searchTerm}
                 onChange={handleSearchChange}
                 onFocus={handleSearchFocus}
                 onBlur={handleSearchBlur}
-                className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+                className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-80"
               />
               
               {/* Search Results Dropdown */}
@@ -266,21 +263,19 @@ const PatientsList = () => {
                 </div>
               )}
             </div>
-            <div className="flex items-center space-x-2">
-             
-              <button 
-                onClick={handleAddPatient}
-                className="bg-emerald-600 text-white px-4 py-2 rounded-md font-medium hover:bg-emerald-700"
-              >
-                Add Patient
-              </button>
-              <button 
-                onClick={handleLogout}
-                className="bg-red-600 text-white px-4 py-2 rounded-md font-medium hover:bg-red-700"
-              >
-                Logout
-              </button>
-            </div>
+            <button 
+              onClick={() => navigate('/')}
+              className="bg-slate-800 text-white px-6 py-2 rounded-md font-medium hover:bg-slate-900"
+            >
+              Open EMR
+            </button>
+            <button 
+              onClick={handleLogout}
+              className="bg-red-600 text-white px-4 py-2 rounded-md font-medium hover:bg-red-700"
+            >
+              Logout
+            </button>
+          </div>
           </div>
         </div>
       </header>
