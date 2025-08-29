@@ -317,18 +317,27 @@ class AntibioticRecommendationEngine:
         """Step 4: Identify target pathogens"""
         pathogen_input = self.patient.pathogen.lower().strip()
         
-        if pathogen_input in ['unknown', 'not specified', 'none', '']:
+        # Enhanced filtering for unknown/unspecified culture results
+        unknown_patterns = [
+            'unknown', 'not specified', 'none', '', 'no growth', 
+            'culture pending', 'pending', 'culture negative', 
+            'negative', 'no organisms', 'sample: not specified'
+        ]
+        
+        # Check if pathogen input matches any unknown patterns exactly
+        if pathogen_input in unknown_patterns or any(pattern == pathogen_input for pattern in unknown_patterns):
             # Empirical therapy - include all pathogens for the condition/severity
             if self.matched_severity:
                 severity_pathogens = self.matched_severity.pathogens.all()
-                self.target_pathogens = list(severity_pathogens)
+                self.target_pathogens = [sp.pathogen for sp in severity_pathogens]
                 self.filter_steps.append({
                     'step': 4,
                     'name': 'Pathogen Identification',
-                    'input': f"Patient pathogen: '{self.patient.pathogen}' (unknown)",
+                    'input': f"Patient pathogen: '{self.patient.pathogen}' (unknown/not specified)",
                     'output': f"Empirical therapy - targeting {len(self.target_pathogens)} pathogens",
                     'result': 'success',
-                    'therapy_type': 'empirical'
+                    'therapy_type': 'empirical',
+                    'note': 'Culture results unknown or not specified - using empirical coverage'
                 })
         else:
             # Targeted therapy - find specific pathogen
@@ -617,6 +626,10 @@ class AntibioticRecommendationEngine:
         formatted_recommendations = []
         
         for i, dosing in enumerate(recommendations, 1):
+            # Filter out recommendations with "No dosage adjustment"
+            if self._should_filter_recommendation(dosing):
+                continue
+                
             # Determine therapy type
             therapy_type = 'targeted' if len(self.target_pathogens) == 1 else 'empirical'
             
@@ -664,6 +677,39 @@ class AntibioticRecommendationEngine:
             rec['rank'] = i
         
         return all_recommendations
+    
+    def _should_filter_recommendation(self, dosing: AntibioticDosing) -> bool:
+        """
+        Determine if a recommendation should be filtered out based on specific criteria
+        Returns True if the recommendation should be excluded
+        
+        Note: Currently disabled to show all available medical recommendations
+        """
+        # Temporarily disable filtering to show all available recommendations
+        return False
+        
+        # Original filtering logic (commented out for now)
+        # # Filter out recommendations with "No dosage adjustment" in dose field
+        # if dosing.dose and "no dosage adjustment" in dosing.dose.lower():
+        #     return True
+        # 
+        # # Filter out recommendations with "No dosage adjustment" in remark field
+        # if dosing.remark and "no dosage adjustment" in dosing.remark.lower():
+        #     return True
+        # 
+        # # Filter out recommendations with "No dosage adjustment" in interval field
+        # if dosing.interval and "no dosage adjustment" in dosing.interval.lower():
+        #     return True
+        # 
+        # # Filter out recommendations with "No dosage adjustment" in duration field
+        # if dosing.duration and "no dosage adjustment" in dosing.duration.lower():
+        #     return True
+        # 
+        # # Filter out recommendations with "No dosage adjustment" in antibiotic name
+        # if dosing.antibiotic and "no dosage adjustment" in dosing.antibiotic.lower():
+        #     return True
+        # 
+        # return False
     
     def _deduplicate_by_antibiotic_name(self, recommendations: List[Dict]) -> List[Dict]:
         """Remove duplicate antibiotics, keeping only the highest scoring instance"""

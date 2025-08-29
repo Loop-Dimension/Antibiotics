@@ -276,7 +276,6 @@ const PatientsList = () => {
               Logout
             </button>
           </div>
-          </div>
         </div>
       </header>
 
