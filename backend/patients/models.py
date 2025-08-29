@@ -268,8 +268,8 @@ class AntibioticDosing(models.Model):
     pathogens = models.ManyToManyField(Pathogen, related_name='dosing_guidelines', help_text="Target pathogens")
     
     # Creatinine Clearance range
-    crcl_min = models.DecimalField(max_digits=6, decimal_places=2, help_text="Minimum CrCl (mL/min)")
-    crcl_max = models.DecimalField(max_digits=6, decimal_places=2, help_text="Maximum CrCl (mL/min)")
+    crcl_min = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, help_text="Minimum CrCl (mL/min)")
+    crcl_max = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, help_text="Maximum CrCl (mL/min)")
     
     # Dialysis type
     dialysis_type = models.CharField(max_length=10, choices=DIALYSIS_CHOICES, default='none')
