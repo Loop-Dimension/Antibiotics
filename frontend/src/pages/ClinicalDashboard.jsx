@@ -165,6 +165,11 @@ const ClinicalDashboard = () => {
     navigate('/');
   };
 
+  const sendOrdersToEMR = () => {
+    // Navigate back to home screen when Send Orders to EMR is clicked
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -175,27 +180,19 @@ const ClinicalDashboard = () => {
               onClick={goToHomeDashboard}
               className="text-2xl font-bold text-gray-900 cursor-pointer hover:text-blue-600"
             >
-              Clinical Decision Support System
+              ImpactUs Antibiotic Advisor
             </h1>
-            {patientId && (
-              <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-md">
-                Patient ID: {patientId}
-              </span>
-            )}
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-600">
-              Welcome, {user?.first_name} {user?.last_name} ({user?.username})
-            </span>
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search patient by name..."
+                placeholder="Search patient..."
                 value={searchTerm}
                 onChange={handleSearchChange}
                 onFocus={handleSearchFocus}
                 onBlur={handleSearchBlur}
-                className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+                className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-80"
               />
               
               {/* Search Results Dropdown */}
@@ -225,34 +222,18 @@ const ClinicalDashboard = () => {
                 </div>
               )}
             </div>
-            <div className="flex items-center space-x-2">
-              <button 
-                onClick={() => navigate('/patients')}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700"
-              >
-                All Patients
-              </button>
-              <button 
-                onClick={() => navigate('/add-patient')}
-                className="bg-emerald-600 text-white px-4 py-2 rounded-md font-medium hover:bg-emerald-700"
-              >
-                Add Patient
-              </button>
-              {patientId && (
-                <button 
-                  onClick={() => navigate(`/edit-patient/${patientId}`)}
-                  className="bg-green-600 text-white px-4 py-2 rounded-md font-medium hover:bg-green-700"
-                >
-                  Edit Patient
-                </button>
-              )}
-              <button 
-                onClick={handleLogout}
-                className="bg-red-600 text-white px-4 py-2 rounded-md font-medium hover:bg-red-700"
-              >
-                Logout
-              </button>
-            </div>
+            <button 
+              onClick={goToHomeDashboard}
+              className="bg-slate-800 text-white px-6 py-2 rounded-md font-medium hover:bg-slate-900"
+            >
+              Open EMR
+            </button>
+            <button 
+              onClick={handleLogout}
+              className="bg-red-600 text-white px-4 py-2 rounded-md font-medium hover:bg-red-700"
+            >
+              Logout
+            </button>
           </div>
         </div>
       </header>
@@ -473,6 +454,16 @@ const ClinicalDashboard = () => {
                         ))}
                       </tbody>
                     </table>
+                    
+                    {/* Send Orders to EMR Button */}
+                    <div className="mt-6 flex justify-start">
+                      <button 
+                        onClick={sendOrdersToEMR}
+                        className="bg-slate-800 text-white px-6 py-3 rounded-md font-medium hover:bg-slate-900 transition-colors"
+                      >
+                        Send Orders to EMR
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-8">
