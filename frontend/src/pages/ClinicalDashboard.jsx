@@ -19,7 +19,7 @@ const ClinicalDashboard = () => {
   const [editingDiagnosis2, setEditingDiagnosis2] = useState(false);
   const [diagnosis2Value, setDiagnosis2Value] = useState('');
   const [editingRecommendations, setEditingRecommendations] = useState({});
-  const [selectedRecommendations, setSelectedRecommendations] = useState(new Set());
+  const [selectedRecommendation, setSelectedRecommendation] = useState(null);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [manualEntry, setManualEntry] = useState({
     antibiotic_name: '',
@@ -216,13 +216,11 @@ const ClinicalDashboard = () => {
   };
 
   const handleSelectRecommendation = (index) => {
-    const newSelected = new Set(selectedRecommendations);
-    if (newSelected.has(index)) {
-      newSelected.delete(index);
+    if (selectedRecommendation === index) {
+      setSelectedRecommendation(null); // Deselect if already selected
     } else {
-      newSelected.add(index);
+      setSelectedRecommendation(index); // Select new recommendation
     }
-    setSelectedRecommendations(newSelected);
   };
 
   const handleEditRecommendation = (index, field, value) => {
@@ -238,25 +236,23 @@ const ClinicalDashboard = () => {
 
   const handleSaveSelectedRecommendations = async () => {
     try {
-      const selectedRecs = recommendations.filter((_, index) => 
-        selectedRecommendations.has(index)
-      );
-      
-      if (selectedRecs.length === 0) {
-        alert('Please select at least one recommendation to save.');
+      if (selectedRecommendation === null) {
+        alert('Please select a recommendation to save.');
         return;
       }
       
-      const response = await patientsAPI.saveRecommendations(patientId, selectedRecs);
+      const selectedRec = recommendations[selectedRecommendation];
+      
+      const response = await patientsAPI.saveRecommendations(patientId, [selectedRec]);
       
       if (response.data.success) {
-        alert(`${selectedRecs.length} recommendation(s) saved successfully!`);
-        // Optionally clear selections after saving
-        setSelectedRecommendations(new Set());
+        alert('Recommendation saved successfully!');
+        // Optionally clear selection after saving
+        setSelectedRecommendation(null);
       }
     } catch (error) {
-      console.error('Error saving recommendations:', error);
-      alert('Failed to save recommendations. Please try again.');
+      console.error('Error saving recommendation:', error);
+      alert('Failed to save recommendation. Please try again.');
     }
   };
 
@@ -303,16 +299,12 @@ const ClinicalDashboard = () => {
   const handleDeleteRecommendation = (index) => {
     if (window.confirm('Are you sure you want to delete this recommendation?')) {
       setRecommendations(prev => prev.filter((_, i) => i !== index));
-      // Update selected recommendations set
-      const newSelected = new Set();
-      selectedRecommendations.forEach(selectedIndex => {
-        if (selectedIndex < index) {
-          newSelected.add(selectedIndex);
-        } else if (selectedIndex > index) {
-          newSelected.add(selectedIndex - 1);
-        }
-      });
-      setSelectedRecommendations(newSelected);
+      // Update selected recommendation
+      if (selectedRecommendation === index) {
+        setSelectedRecommendation(null);
+      } else if (selectedRecommendation > index) {
+        setSelectedRecommendation(selectedRecommendation - 1);
+      }
     }
   };
 
@@ -449,11 +441,6 @@ const ClinicalDashboard = () => {
                   <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
                     {patientData.patient_id}
                   </span>
-                  {patientData.pathogen && patientData.pathogen !== 'Unknown' && (
-                    <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">
-                      Culture +
-                    </span>
-                  )}
                 </div>
               </div>
               
@@ -601,12 +588,6 @@ const ClinicalDashboard = () => {
                 <h3 className="text-xl font-bold text-gray-900">Recommended Regimen</h3>
                 <div className="flex space-x-2">
                   <button 
-                    onClick={handleAddManualEntry}
-                    className="px-3 py-1 bg-green-100 text-green-800 rounded-md text-sm font-medium hover:bg-green-200"
-                  >
-                    Add Manual Entry
-                  </button>
-                  <button 
                     onClick={() => fetchAIRecommendations(patientId)}
                     className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md text-sm font-medium hover:bg-blue-200"
                   >
@@ -725,10 +706,11 @@ const ClinicalDashboard = () => {
                           <tr key={index} className={`hover:bg-gray-50 ${rec.isManual ? 'bg-blue-25 border-l-4 border-l-blue-400' : ''}`}>
                             <td className="px-4 py-4 whitespace-nowrap">
                               <input
-                                type="checkbox"
-                                checked={selectedRecommendations.has(index)}
+                                type="radio"
+                                name="recommendation"
+                                checked={selectedRecommendation === index}
                                 onChange={() => handleSelectRecommendation(index)}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                               />
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
@@ -771,22 +753,74 @@ const ClinicalDashboard = () => {
                             </td>
                           </tr>
                         ))}
+                        {/* Empty row for manual entry */}
+                        <tr className="bg-gray-50 border-l-4 border-l-green-400">
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <input
+                              type="radio"
+                              name="recommendation"
+                              checked={selectedRecommendation === 'manual'}
+                              onChange={() => {
+                                if (selectedRecommendation === 'manual') {
+                                  setSelectedRecommendation(null);
+                                } else {
+                                  setSelectedRecommendation('manual');
+                                }
+                              }}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                            />
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-full">
+                                <input
+                                  type="text"
+                                  value={manualEntry.antibiotic_name}
+                                  onChange={(e) => handleManualEntryChange('antibiotic_name', e.target.value)}
+                                  placeholder="Enter antibiotic name..."
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+                                />
+                               
+                              </div>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                Manual
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <input
+                              type="text"
+                              value={manualEntry.dose}
+                              onChange={(e) => handleManualEntryChange('dose', e.target.value)}
+                              placeholder="Dose"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <input
+                              type="text"
+                              value={manualEntry.interval}
+                              onChange={(e) => handleManualEntryChange('interval', e.target.value)}
+                              placeholder="e.g., q12h"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <input
+                              type="text"
+                              value={manualEntry.duration}
+                              onChange={(e) => handleManualEntryChange('duration', e.target.value)}
+                              placeholder="Duration"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                          </td>
+                        </tr>
                       </tbody>
                     </table>
                     
                     {/* Action Buttons */}
-                    <div className="mt-6 flex justify-between items-center">
-                      <div className="text-sm text-gray-600">
-                        {selectedRecommendations.size} of {recommendations.length} recommendation(s) selected
-                      </div>
+                    <div className="mt-6 flex justify-end items-center">
                       <div className="flex space-x-3">
-                        <button 
-                          onClick={handleSaveSelectedRecommendations}
-                          disabled={selectedRecommendations.size === 0}
-                          className="bg-green-600 text-white px-4 py-2 rounded-md font-medium hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                        >
-                          Save Selected ({selectedRecommendations.size})
-                        </button>
                         <button 
                           onClick={sendOrdersToEMR}
                           className="bg-slate-800 text-white px-6 py-2 rounded-md font-medium hover:bg-slate-900 transition-colors"

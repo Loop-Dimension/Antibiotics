@@ -20,6 +20,15 @@ const PatientsList = () => {
   const [filterOptions, setFilterOptions] = useState(null);
   const { user, logout } = useAuth();
   const searchTimeoutRef = useRef(null);
+  
+  // Manual entry state
+  const [manualEntry, setManualEntry] = useState({
+    name: '',
+    age: '',
+    gender: '',
+    diagnosis1: '',
+    antibiotics: ''
+  });
 
   useEffect(() => {
     fetchPatients(currentPage);
@@ -181,6 +190,46 @@ const PatientsList = () => {
   const goToPage = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
+    }
+  };
+
+  const handleManualEntryChange = (field, value) => {
+    setManualEntry(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSaveManualEntry = async () => {
+    if (!manualEntry.name.trim()) {
+      alert('Please enter a patient name.');
+      return;
+    }
+
+    try {
+      const newPatient = {
+        ...manualEntry,
+        age: parseInt(manualEntry.age) || 0
+      };
+
+      await patientsAPI.createPatient(newPatient);
+      
+      // Clear manual entry
+      setManualEntry({
+        name: '',
+        age: '',
+        gender: '',
+        diagnosis1: '',
+        antibiotics: ''
+      });
+      
+      // Refresh the patient list
+      await fetchPatients(currentPage);
+      
+      alert('Patient added successfully!');
+    } catch (error) {
+      console.error('Error adding patient:', error);
+      alert('Failed to add patient. Please try again.');
     }
   };
 
@@ -475,13 +524,7 @@ const PatientsList = () => {
                     Diagnosis
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Pathogen
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Treatment
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Risk
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -525,22 +568,6 @@ const PatientsList = () => {
                         </div>
                       </td>
 
-                      {/* Pathogen */}
-                      <td className="px-4 py-4">
-                        {patient.pathogen && patient.pathogen !== 'None' ? (
-                          <div className="flex flex-col">
-                            <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full w-fit mb-1">
-                              Culture +
-                            </span>
-                            <div className="text-sm font-medium text-red-900">
-                              {patient.pathogen}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-gray-500">No culture</span>
-                        )}
-                      </td>
-
                       {/* Treatment */}
                       <td className="px-4 py-4">
                         {patient.antibiotics && patient.antibiotics !== 'None' ? (
@@ -550,13 +577,6 @@ const PatientsList = () => {
                         ) : (
                           <span className="text-sm text-gray-500">None</span>
                         )}
-                      </td>
-
-                      {/* Risk Level */}
-                      <td className="px-4 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium w-18 text-center inline-block ${risk.color} ${risk.textColor}`}>
-                          {risk.level}
-                        </span>
                       </td>
 
                       {/* Actions */}
@@ -594,7 +614,87 @@ const PatientsList = () => {
                     </tr>
                   );
                 })}
-              </tbody>
+                  
+                  {/* Empty row for manual entry */}
+                  <tr className="bg-gray-50 border-l-4 border-l-green-400 hover:bg-gray-100">
+                    {/* Patient Info */}
+                    <td className="px-4 py-4">
+                      <div className="flex flex-col space-y-2">
+                        <input
+                          type="text"
+                          value={manualEntry.name}
+                          onChange={(e) => handleManualEntryChange('name', e.target.value)}
+                          placeholder="Enter patient name..."
+                          className="font-medium text-gray-900 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+                        />
+                        <div className="flex space-x-2">
+                          <input
+                            type="number"
+                            value={manualEntry.age}
+                            onChange={(e) => handleManualEntryChange('age', e.target.value)}
+                            placeholder="Age"
+                            className="text-sm text-gray-600 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500 w-16"
+                          />
+                          <select
+                            value={manualEntry.gender}
+                            onChange={(e) => handleManualEntryChange('gender', e.target.value)}
+                            className="text-sm text-gray-600 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+                          >
+                            <option value="">Gender</option>
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
+                          </select>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Diagnosis */}
+                    <td className="px-4 py-4">
+                      <input
+                        type="text"
+                        value={manualEntry.diagnosis1}
+                        onChange={(e) => handleManualEntryChange('diagnosis1', e.target.value)}
+                        placeholder="Enter diagnosis..."
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+                      />
+                    </td>
+
+                    {/* Treatment */}
+                    <td className="px-4 py-4">
+                      <input
+                        type="text"
+                        value={manualEntry.antibiotics}
+                        onChange={(e) => handleManualEntryChange('antibiotics', e.target.value)}
+                        placeholder="Current antibiotics..."
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
+                      />
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-4">
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={handleSaveManualEntry}
+                          className="text-sm bg-green-600 text-white py-2 px-4 rounded-md font-medium hover:bg-green-700 transition-colors"
+                        >
+                          Add Patient
+                        </button>
+                        <button 
+                          onClick={() => setManualEntry({
+                            name: '',
+                            age: '',
+                            gender: '',
+                            diagnosis1: '',
+                            antibiotics: ''
+                          })}
+                          className="text-sm bg-gray-400 text-white py-2 px-4 rounded-md font-medium hover:bg-gray-500 transition-colors"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
             </table>
           </div>
           
