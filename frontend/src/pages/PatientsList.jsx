@@ -326,32 +326,85 @@ const PatientsList = () => {
         </div>
       </div>
 
-      {/* Summary Stats Bar */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">
-              {statistics?.total_patients || totalCount}
+      {/* Summary Stats Bar - Modern Design */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-100 border-b border-gray-200 py-8">
+        <div className="container mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Total Patients Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <div className="text-3xl font-bold text-gray-900">
+                    {statistics?.total_patients || totalCount}
+                  </div>
+                  <div className="text-sm font-medium text-gray-600">Total Patients</div>
+                </div>
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Total Patients</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-red-600">
-              {statistics?.risk_levels?.high || '--'}
+
+            {/* High Risk Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <div className="text-3xl font-bold text-gray-900">
+                    {statistics?.risk_levels?.high || '--'}
+                  </div>
+                  <div className="text-sm font-medium text-gray-600">High Risk</div>
+                </div>
+              </div>
             </div>
-            <div className="text-sm text-gray-600">High Risk</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">
-              {statistics?.culture_status?.positive || '--'}
+
+            {/* Culture Positive Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <div className="text-3xl font-bold text-gray-900">
+                    {statistics?.culture_status?.positive || '--'}
+                  </div>
+                  <div className="text-sm font-medium text-gray-600">Culture Positive</div>
+                </div>
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Culture Positive</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {statistics?.treatment_status?.on_treatment || '--'}
+
+            {/* On Treatment Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <div className="text-3xl font-bold text-gray-900">
+                    {statistics?.treatment_status?.on_treatment || '--'}
+                  </div>
+                  <div className="text-sm font-medium text-gray-600">On Treatment</div>
+                </div>
+              </div>
             </div>
-            <div className="text-sm text-gray-600">On Treatment</div>
           </div>
         </div>
       </div>
