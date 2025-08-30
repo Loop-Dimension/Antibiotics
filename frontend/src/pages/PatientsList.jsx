@@ -145,6 +145,39 @@ const PatientsList = () => {
     navigate('/add-patient');
   };
 
+  const handleDeletePatient = async (patientId, patientName) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete patient "${patientName}" (ID: ${patientId})?\n\nThis action cannot be undone and will permanently remove all patient data including medical records, test results, and treatment history.`
+    );
+    
+    if (confirmDelete) {
+      try {
+        await patientsAPI.deletePatient(patientId);
+        
+        // Refresh the patient list
+        await fetchPatients(currentPage);
+        
+        // Show success message
+        alert(`Patient "${patientName}" has been successfully deleted.`);
+        
+        // If current page is empty after deletion and we're not on page 1, go to previous page
+        if (patients.length === 1 && currentPage > 1) {
+          setCurrentPage(currentPage - 1);
+        }
+        
+      } catch (error) {
+        console.error('Error deleting patient:', error);
+        
+        // Show appropriate error message
+        const errorMessage = error.response?.data?.error || 
+                           error.response?.data?.message || 
+                           'Failed to delete patient. Please try again.';
+        
+        alert(`Error: ${errorMessage}`);
+      }
+    }
+  };
+
   const goToPage = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
@@ -376,120 +409,151 @@ const PatientsList = () => {
           </div>
         </div>
 
-        {/* Enhanced Patients Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-          {patients.map((patient) => {
-            const risk = getRiskLevel(patient);
-            return (
-              <div 
-                key={patient.patient_id}
-                className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group h-[450px] flex flex-col"
-                onClick={() => viewPatient(patient.patient_id)}
-              >
-                {/* Enhanced Patient Card Header */}
-                <div className="p-4 border-b border-gray-100">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                        {patient.name || 'Unknown'}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        ID: {patient.patient_id} | {patient.age} years | {patient.gender === 'Male' || patient.gender === 'M' ? '♂' : '♀'}
-                      </p>
-                      {patient.date_recorded && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          Recorded: {new Date(patient.date_recorded).toLocaleDateString()}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end space-y-1">
-                      <div className={`px-2 py-1 rounded-full text-xs font-medium ${risk.color} ${risk.textColor}`}>
-                        {risk.level}
-                      </div>
-                      {patient.pathogen && patient.pathogen !== 'None' && (
-                        <div className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          Culture +
+        {/* Patients Table */}
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mb-8">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Patient
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Diagnosis
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Pathogen
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Treatment
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Risk
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {patients.map((patient) => {
+                  const risk = getRiskLevel(patient);
+                  return (
+                    <tr 
+                      key={patient.patient_id}
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onClick={() => viewPatient(patient.patient_id)}
+                    >
+                      {/* Patient Info */}
+                      <td className="px-4 py-4">
+                        <div className="flex flex-col">
+                          <div className="font-medium text-gray-900 hover:text-blue-600">
+                            {patient.name || 'Unknown'}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            ID: {patient.patient_id}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Primary Diagnosis */}
-                  {patient.diagnosis1 && (
-                    <div className="flex items-center space-x-2">
-                      <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(patient.diagnosis1)}`}>
-                        {patient.diagnosis1}
-                      </span>
-                      {patient.diagnosis2 && patient.diagnosis2 !== patient.diagnosis1 && (
-                        <span className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">
-                          +{patient.diagnosis2}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
+                      </td>
 
-                {/* Enhanced Patient Card Body */}
-                <div className="p-4 space-y-3 flex-1">
-                  
+                      {/* Diagnosis */}
+                      <td className="px-4 py-4">
+                        <div className="flex flex-col space-y-1">
+                          {patient.diagnosis1 && (
+                            <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(patient.diagnosis1)} w-fit`}>
+                              {patient.diagnosis1}
+                            </span>
+                          )}
+                          {patient.allergies && patient.allergies !== 'None' && (
+                            <span className="inline-block px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full w-fit">
+                              ⚠️ Allergies
+                            </span>
+                          )}
+                        </div>
+                      </td>
 
-                  {/* Clinical Information */}
-                  <div className="space-y-2">
-                    {/* Pathogen & Sample */}
-                    {patient.pathogen && patient.pathogen !== 'None' && (
-                      <div className="bg-red-50 border border-red-200 rounded-md p-2">
-                        <div className="text-xs font-medium text-red-800 mb-1">CULTURE RESULTS</div>
-                        <div className="text-sm font-medium text-red-900">{patient.pathogen}</div>
-                        {patient.sample_type && (
-                          <div className="text-xs text-red-700">Sample: {patient.sample_type}</div>
+                      {/* Pathogen */}
+                      <td className="px-4 py-4">
+                        {patient.pathogen && patient.pathogen !== 'None' ? (
+                          <div className="flex flex-col">
+                            <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full w-fit mb-1">
+                              Culture +
+                            </span>
+                            <div className="text-sm font-medium text-red-900">
+                              {patient.pathogen}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-500">No culture</span>
                         )}
-                      </div>
-                    )}
-                    
-                    {/* Current Treatment */}
-                    {patient.antibiotics && patient.antibiotics !== 'None' && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-md p-2">
-                        <div className="text-xs font-medium text-blue-800 mb-1">CURRENT TREATMENT</div>
-                        <div className="text-sm font-medium text-blue-900 break-words">{patient.antibiotics}</div>
-                      </div>
-                    )}
+                      </td>
 
-                    {/* Allergies Warning */}
-                    {patient.allergies && patient.allergies !== 'None' && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-md p-2">
-                        <div className="text-xs font-medium text-yellow-800 mb-1">⚠️ ALLERGIES</div>
-                        <div className="text-sm font-medium text-yellow-900">{patient.allergies}</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                      {/* Treatment */}
+                      <td className="px-4 py-4">
+                        {patient.antibiotics && patient.antibiotics !== 'None' ? (
+                          <div className="text-sm text-blue-900 max-w-xs">
+                            {patient.antibiotics}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-500">None</span>
+                        )}
+                      </td>
 
-                {/* Enhanced Card Footer */}
-                <div className="px-4 py-3 bg-gray-50 rounded-b-lg mt-auto border-t border-gray-100">
-                  <div className="flex space-x-2">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        viewPatient(patient.patient_id);
-                      }}
-                      className="flex-1 text-sm bg-blue-600 text-white py-2 px-3 rounded-md font-medium hover:bg-blue-700 transition-colors"
-                    >
-                      View Details
-                    </button>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/edit-patient/${patient.patient_id}`);
-                      }}
-                      className="flex-1 text-sm bg-green-600 text-white py-2 px-3 rounded-md font-medium hover:bg-green-700 transition-colors"
-                    >
-                      Edit
-                    </button>
-                  </div>
-                </div>
+                      {/* Risk Level */}
+                      <td className="px-4 py-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium w-18 text-center inline-block ${risk.color} ${risk.textColor}`}>
+                          {risk.level}
+                        </span>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-4 py-4">
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              viewPatient(patient.patient_id);
+                            }}
+                            className="text-sm bg-blue-600 text-white py-2 px-4 rounded-md font-medium hover:bg-blue-700 transition-colors"
+                          >
+                            View
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/edit-patient/${patient.patient_id}`);
+                            }}
+                            className="text-sm bg-green-600 text-white py-2 px-4 rounded-md font-medium hover:bg-green-700 transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeletePatient(patient.patient_id, patient.name);
+                            }}
+                            className="text-sm bg-red-600 text-white py-2 px-4 rounded-md font-medium hover:bg-red-700 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          
+          {/* No patients message */}
+          {patients.length === 0 && (
+            <div className="text-center py-12">
+              <div className="text-gray-500 text-lg">No patients found</div>
+              <div className="text-gray-400 text-sm mt-2">
+                {filterType !== 'all' ? 'Try adjusting your filters' : 'Start by adding a new patient'}
               </div>
-            );
-          })}
+            </div>
+          )}
         </div>
 
         {/* Enhanced Pagination */}
