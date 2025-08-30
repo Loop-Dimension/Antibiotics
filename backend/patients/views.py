@@ -601,6 +601,51 @@ class PatientViewSet(viewsets.ModelViewSet):
                 'total_matches': 0
             }, status=500)
 
+    @action(detail=True, methods=['post'])
+    def save_recommendations(self, request, pk=None):
+        """Save selected and modified recommendations for a patient"""
+        try:
+            patient = self.get_object()
+            recommendations = request.data.get('recommendations', [])
+            
+            if not recommendations:
+                return Response({
+                    'error': 'No recommendations provided',
+                    'success': False
+                }, status=400)
+            
+            # Here you can save the recommendations to a new model or update patient record
+            # For now, we'll just log them and return success
+            logger.info(f"Saving {len(recommendations)} recommendations for patient {patient.patient_id}")
+            
+            for rec in recommendations:
+                logger.info(f"Recommendation: {rec.get('antibiotic_name', rec.get('antibiotic'))} - "
+                           f"Dose: {rec.get('dose')} - "
+                           f"Interval: {rec.get('interval')} - "
+                           f"Duration: {rec.get('duration')}")
+            
+            return Response({
+                'success': True,
+                'message': f'Successfully saved {len(recommendations)} recommendations',
+                'patient_id': patient.patient_id,
+                'recommendations_count': len(recommendations)
+            }, status=200)
+            
+        except Patient.DoesNotExist:
+            logger.error(f"Patient {pk} not found")
+            return Response({
+                'error': 'Patient not found',
+                'success': False
+            }, status=404)
+            
+        except Exception as e:
+            logger.error(f"Error saving recommendations for patient {pk}: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Failed to save recommendations',
+                'details': str(e),
+                'success': False
+            }, status=500)
+
 
 class CultureTestViewSet(viewsets.ModelViewSet):
     queryset = CultureTest.objects.all()

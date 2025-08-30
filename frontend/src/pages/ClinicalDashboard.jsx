@@ -18,6 +18,17 @@ const ClinicalDashboard = () => {
   const [error, setError] = useState(null);
   const [editingDiagnosis2, setEditingDiagnosis2] = useState(false);
   const [diagnosis2Value, setDiagnosis2Value] = useState('');
+  const [editingRecommendations, setEditingRecommendations] = useState({});
+  const [selectedRecommendations, setSelectedRecommendations] = useState(new Set());
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  const [manualEntry, setManualEntry] = useState({
+    antibiotic_name: '',
+    dose: '',
+    interval: '',
+    duration: '',
+    route: '',
+    isManual: true
+  });
   const { user, logout } = useAuth();
   const searchTimeoutRef = useRef(null);
 
@@ -202,6 +213,107 @@ const ClinicalDashboard = () => {
   const handleCancelEdit = () => {
     setDiagnosis2Value(patientData.diagnosis2 || '');
     setEditingDiagnosis2(false);
+  };
+
+  const handleSelectRecommendation = (index) => {
+    const newSelected = new Set(selectedRecommendations);
+    if (newSelected.has(index)) {
+      newSelected.delete(index);
+    } else {
+      newSelected.add(index);
+    }
+    setSelectedRecommendations(newSelected);
+  };
+
+  const handleEditRecommendation = (index, field, value) => {
+    setRecommendations(prev => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        [field]: value
+      };
+      return updated;
+    });
+  };
+
+  const handleSaveSelectedRecommendations = async () => {
+    try {
+      const selectedRecs = recommendations.filter((_, index) => 
+        selectedRecommendations.has(index)
+      );
+      
+      if (selectedRecs.length === 0) {
+        alert('Please select at least one recommendation to save.');
+        return;
+      }
+      
+      const response = await patientsAPI.saveRecommendations(patientId, selectedRecs);
+      
+      if (response.data.success) {
+        alert(`${selectedRecs.length} recommendation(s) saved successfully!`);
+        // Optionally clear selections after saving
+        setSelectedRecommendations(new Set());
+      }
+    } catch (error) {
+      console.error('Error saving recommendations:', error);
+      alert('Failed to save recommendations. Please try again.');
+    }
+  };
+
+  const handleAddManualEntry = () => {
+    setShowManualEntry(true);
+  };
+
+  const handleCancelManualEntry = () => {
+    setShowManualEntry(false);
+    setManualEntry({
+      antibiotic_name: '',
+      dose: '',
+      interval: '',
+      duration: '',
+      route: '',
+      isManual: true
+    });
+  };
+
+  const handleSaveManualEntry = () => {
+    if (!manualEntry.antibiotic_name.trim()) {
+      alert('Please enter an antibiotic name.');
+      return;
+    }
+
+    // Add manual entry to recommendations
+    const newRecommendation = {
+      ...manualEntry,
+      antibiotic: manualEntry.antibiotic_name,
+      isManual: true
+    };
+
+    setRecommendations(prev => [...prev, newRecommendation]);
+    handleCancelManualEntry();
+  };
+
+  const handleManualEntryChange = (field, value) => {
+    setManualEntry(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleDeleteRecommendation = (index) => {
+    if (window.confirm('Are you sure you want to delete this recommendation?')) {
+      setRecommendations(prev => prev.filter((_, i) => i !== index));
+      // Update selected recommendations set
+      const newSelected = new Set();
+      selectedRecommendations.forEach(selectedIndex => {
+        if (selectedIndex < index) {
+          newSelected.add(selectedIndex);
+        } else if (selectedIndex > index) {
+          newSelected.add(selectedIndex - 1);
+        }
+      });
+      setSelectedRecommendations(newSelected);
+    }
   };
 
   return (
@@ -487,12 +599,20 @@ const ClinicalDashboard = () => {
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold text-gray-900">Recommended Regimen</h3>
-                <button 
-                  onClick={() => fetchAIRecommendations(patientId)}
-                  className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md text-sm font-medium hover:bg-blue-200"
-                >
-                  Refresh
-                </button>
+                <div className="flex space-x-2">
+                  <button 
+                    onClick={handleAddManualEntry}
+                    className="px-3 py-1 bg-green-100 text-green-800 rounded-md text-sm font-medium hover:bg-green-200"
+                  >
+                    Add Manual Entry
+                  </button>
+                  <button 
+                    onClick={() => fetchAIRecommendations(patientId)}
+                    className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md text-sm font-medium hover:bg-blue-200"
+                  >
+                    Refresh
+                  </button>
+                </div>
               </div>
               
               {/* Allergy Warning */}
@@ -502,6 +622,81 @@ const ClinicalDashboard = () => {
                   <div className="text-sm">
                     <div className="font-medium text-yellow-800">Allergy Conflict</div>
                     <div className="text-yellow-700">Patient is allergic to {patientData.allergies}. Avoid β-lactams; consider alternatives below.</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Manual Entry Form */}
+              {showManualEntry && (
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-blue-900">Add Manual Recommendation</h4>
+                    <button 
+                      onClick={handleCancelManualEntry}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      ✕ Cancel
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-5 gap-3 mb-3">
+                    <div>
+                      <label className="block text-xs font-medium text-blue-800 mb-1">Antibiotic Name *</label>
+                      <input
+                        type="text"
+                        value={manualEntry.antibiotic_name}
+                        onChange={(e) => handleManualEntryChange('antibiotic_name', e.target.value)}
+                        placeholder="e.g., Not Recommended"
+                        className="w-full px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-blue-800 mb-1">Dose</label>
+                      <input
+                        type="text"
+                        value={manualEntry.dose}
+                        onChange={(e) => handleManualEntryChange('dose', e.target.value)}
+                        placeholder="N/A or dose"
+                        className="w-full px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-blue-800 mb-1">Interval</label>
+                      <input
+                        type="text"
+                        value={manualEntry.interval}
+                        onChange={(e) => handleManualEntryChange('interval', e.target.value)}
+                        placeholder="N/A or interval"
+                        className="w-full px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-blue-800 mb-1">Duration</label>
+                      <input
+                        type="text"
+                        value={manualEntry.duration}
+                        onChange={(e) => handleManualEntryChange('duration', e.target.value)}
+                        placeholder="N/A or duration"
+                        className="w-full px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-blue-800 mb-1">Route</label>
+                      <input
+                        type="text"
+                        value={manualEntry.route}
+                        onChange={(e) => handleManualEntryChange('route', e.target.value)}
+                        placeholder="N/A or route"
+                        className="w-full px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <button 
+                      onClick={handleSaveManualEntry}
+                      className="bg-blue-600 text-white px-4 py-1 rounded text-sm font-medium hover:bg-blue-700"
+                    >
+                      Add Entry
+                    </button>
                   </div>
                 </div>
               )}
@@ -518,44 +713,87 @@ const ClinicalDashboard = () => {
                     <table className="min-w-full">
                       <thead className="bg-gray-50">
                         <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Select</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Antibiotic</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dose</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Interval</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rationale</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {recommendations.map((rec, index) => (
-                          <tr key={index} className="hover:bg-gray-50">
+                          <tr key={index} className={`hover:bg-gray-50 ${rec.isManual ? 'bg-blue-25 border-l-4 border-l-blue-400' : ''}`}>
                             <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">{rec.antibiotic_name || rec.antibiotic}</div>
-                              <div className="text-xs text-gray-500">{rec.route || rec.routes_array?.join(', ') || 'Not specified'}</div>
+                              <input
+                                type="checkbox"
+                                checked={selectedRecommendations.has(index)}
+                                onChange={() => handleSelectRecommendation(index)}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              />
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{rec.dose || 'See guidelines'}</div>
-                              {rec.interval && (
-                                <div className="text-xs text-gray-500">{rec.interval}</div>
-                              )}
+                              <div className="flex items-center space-x-2">
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">{rec.antibiotic_name || rec.antibiotic}</div>
+                                  <div className="text-xs text-gray-500">{rec.route || rec.routes_array?.join(', ') || 'Not specified'}</div>
+                                </div>
+                                {rec.isManual && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                    Manual
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{rec.duration || 'Per guidelines'}</div>
+                              <input
+                                type="text"
+                                value={rec.dose || 'See guidelines'}
+                                onChange={(e) => handleEditRecommendation(index, 'dose', e.target.value)}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              />
                             </td>
-                            <td className="px-4 py-4">
-                              <div className="text-sm text-gray-900">{rec.remark || rec.medical_rationale || 'Evidence-based recommendation'}</div>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <input
+                                type="text"
+                                value={rec.interval || ''}
+                                onChange={(e) => handleEditRecommendation(index, 'interval', e.target.value)}
+                                placeholder="e.g., q12h"
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              />
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <input
+                                type="text"
+                                value={rec.duration || 'Per guidelines'}
+                                onChange={(e) => handleEditRecommendation(index, 'duration', e.target.value)}
+                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              />
                             </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                     
-                    {/* Send Orders to EMR Button */}
-                    <div className="mt-6 flex justify-start">
-                      <button 
-                        onClick={sendOrdersToEMR}
-                        className="bg-slate-800 text-white px-6 py-3 rounded-md font-medium hover:bg-slate-900 transition-colors"
-                      >
-                        Send Orders to EMR
-                      </button>
+                    {/* Action Buttons */}
+                    <div className="mt-6 flex justify-between items-center">
+                      <div className="text-sm text-gray-600">
+                        {selectedRecommendations.size} of {recommendations.length} recommendation(s) selected
+                      </div>
+                      <div className="flex space-x-3">
+                        <button 
+                          onClick={handleSaveSelectedRecommendations}
+                          disabled={selectedRecommendations.size === 0}
+                          className="bg-green-600 text-white px-4 py-2 rounded-md font-medium hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Save Selected ({selectedRecommendations.size})
+                        </button>
+                        <button 
+                          onClick={sendOrdersToEMR}
+                          className="bg-slate-800 text-white px-6 py-2 rounded-md font-medium hover:bg-slate-900 transition-colors"
+                        >
+                          Send Orders to EMR
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ) : (

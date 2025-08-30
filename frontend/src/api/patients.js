@@ -129,6 +129,7 @@ export const patientsAPI = {
   createPatient: (patientData) => api.post('/api/patients/', patientData),
   updatePatient: (id, patientData) => api.put(`/api/patients/${id}/`, patientData),
   deletePatient: (id) => api.delete(`/api/patients/${id}/`),
+  saveRecommendations: (id, recommendations) => api.post(`/api/patients/${id}/save_recommendations/`, { recommendations }),
   
   // Advanced filtering methods
   filterByDiagnosis: (diagnosis, page = 1, pageSize = 12) => {
