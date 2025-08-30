@@ -16,6 +16,8 @@ const ClinicalDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [editingDiagnosis2, setEditingDiagnosis2] = useState(false);
+  const [diagnosis2Value, setDiagnosis2Value] = useState('');
   const { user, logout } = useAuth();
   const searchTimeoutRef = useRef(null);
 
@@ -33,6 +35,7 @@ const ClinicalDashboard = () => {
     try {
       const response = await patientsAPI.getPatient(id);
       setPatientData(response.data);
+      setDiagnosis2Value(response.data.diagnosis2 || '');
       
       // Fetch recommended regimen
       fetchAIRecommendations(id);
@@ -168,6 +171,37 @@ const ClinicalDashboard = () => {
   const sendOrdersToEMR = () => {
     // Navigate back to home screen when Send Orders to EMR is clicked
     navigate('/');
+  };
+
+  const handleEditDiagnosis2 = () => {
+    setEditingDiagnosis2(true);
+  };
+
+  const handleSaveDiagnosis2 = async () => {
+    try {
+      const updatedData = {
+        ...patientData,
+        diagnosis2: diagnosis2Value
+      };
+      
+      await patientsAPI.updatePatient(patientId, updatedData);
+      
+      // Update local state
+      setPatientData(prev => ({
+        ...prev,
+        diagnosis2: diagnosis2Value
+      }));
+      
+      setEditingDiagnosis2(false);
+    } catch (error) {
+      console.error('Error updating diagnosis2:', error);
+      alert('Failed to update diagnosis. Please try again.');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setDiagnosis2Value(patientData.diagnosis2 || '');
+    setEditingDiagnosis2(false);
   };
 
   return (
@@ -318,6 +352,7 @@ const ClinicalDashboard = () => {
                     {patientData.name}, {patientData.age} {patientData.gender === 'Male' || patientData.gender === 'M' ? '♂' : '♀'}
                   </div>
                 </div>
+                
                 <div>
                   <label className="text-xs font-medium text-gray-500">Allergies:</label>
                   <div className={`text-sm ${patientData.allergies && patientData.allergies !== 'None' ? 'text-red-600 font-medium' : 'text-gray-700'}`}>
@@ -336,7 +371,65 @@ const ClinicalDashboard = () => {
                     {patientData.antibiotics && patientData.antibiotics !== 'None' ? patientData.antibiotics : 'None'}
                   </div>
                 </div>
+
+                {/* Diagnosis 1 */}
+                {patientData.diagnosis1 && (
+                  <div>
+                    <label className="text-xs font-medium text-gray-500">Current Diagnosis:</label>
+                    <div className="text-sm font-semibold text-gray-900">
+                      {patientData.diagnosis1}
+                    </div>
+                  </div>
+                )}
               </div>
+            </div>
+
+            {/* Diagnosis 2 Card */}
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-xs font-medium text-gray-500">Second Diagnosis:</label>
+                {!editingDiagnosis2 && (
+                  <button
+                    onClick={handleEditDiagnosis2}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+              
+              {editingDiagnosis2 ? (
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={diagnosis2Value}
+                    onChange={(e) => setDiagnosis2Value(e.target.value)}
+                    placeholder="Enter second diagnosis..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    autoFocus
+                  />
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={handleSaveDiagnosis2}
+                      className="px-3 py-1 bg-green-600 text-white text-xs rounded-md hover:bg-green-700"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="px-3 py-1 bg-gray-400 text-white text-xs rounded-md hover:bg-gray-500"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm font-semibold text-gray-900">
+                  {patientData.diagnosis2 || (
+                    <span className="text-gray-400 italic">No second diagnosis</span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Vitals & Labs Card */}
