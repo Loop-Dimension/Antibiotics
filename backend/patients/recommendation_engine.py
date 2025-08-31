@@ -32,14 +32,11 @@ class AntibioticRecommendationEngine:
         'acute pyelonephritis': 'Pyelonephritis',
         'chronic pyelonephritis': 'Pyelonephritis',
         'kidney infection': 'Pyelonephritis',
-        'upper urinary tract infection': 'Pyelonephritis',
+        
         'upper uti': 'Pyelonephritis',
         
-        # Urinary tract infection variations (including common misspellings)
-        'urinary tract infection': 'Pyelonephritis',
-        'urinary track infection': 'Pyelonephritis',  # Common misspelling
+        
         'uti': 'Pyelonephritis',
-        'urinary infection': 'Pyelonephritis',
         'bladder infection': 'Pyelonephritis',
         'cystitis': 'Pyelonephritis',
         

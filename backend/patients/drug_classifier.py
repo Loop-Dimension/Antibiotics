@@ -83,7 +83,6 @@ class DrugClassifier:
         'nitrofurans': {
             'names': ['nitrofurantoin'],
             'mechanism': 'Multiple mechanisms',
-            'spectrum': 'Urinary pathogens',
             'common_uses': ['uncomplicated UTI']
         }
     }
