@@ -21,6 +21,7 @@ const ClinicalDashboard = () => {
   const [editingRecommendations, setEditingRecommendations] = useState({});
   const [selectedRecommendation, setSelectedRecommendation] = useState(null);
   const [showManualEntry, setShowManualEntry] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [manualEntry, setManualEntry] = useState({
     antibiotic_name: '',
     dose: '',
@@ -39,6 +40,18 @@ const ClinicalDashboard = () => {
       fetchInitialPatient();
     }
   }, [patientId]);
+
+  // Auto-redirect after showing success modal
+  useEffect(() => {
+    if (showSuccessModal) {
+      const timer = setTimeout(() => {
+        setShowSuccessModal(false);
+        navigate('/');
+      }, 3000); // Auto-redirect after 3 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [showSuccessModal, navigate]);
 
   const fetchSpecificPatient = async (id) => {
     setLoading(true);
@@ -180,8 +193,14 @@ const ClinicalDashboard = () => {
   };
 
   const sendOrdersToEMR = () => {
-    // Navigate back to home screen when Send Orders to EMR is clicked
-    navigate('/');
+    // Check if a recommendation is selected
+    if (selectedRecommendation === null) {
+      alert('Please select a recommendation before sending orders to EMR.');
+      return;
+    }
+    
+    // Show success modal
+    setShowSuccessModal(true);
   };
 
   const handleEditDiagnosis2 = () => {
@@ -927,6 +946,78 @@ const ClinicalDashboard = () => {
                 <p>• Recommendations are based on the latest IDSA and Korean clinical guidelines</p>
                 <p>• All dosing suggestions are automatically adjusted for renal function</p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0  bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 ease-out scale-100">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Orders Sent Successfully!</h3>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="px-6 py-4">
+              <div className="flex items-center mb-4">
+                <div className="flex-shrink-0">
+                  <svg className="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm text-gray-700">
+                    The selected antibiotic recommendation has been successfully sent to the EMR system.
+                  </p>
+                </div>
+              </div>
+              
+              {/* Show selected recommendation details */}
+              {selectedRecommendation !== null && selectedRecommendation !== 'manual' && recommendations[selectedRecommendation] && (
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+                  <h4 className="font-medium text-blue-900 mb-2">Sent Recommendation:</h4>
+                  <div className="text-sm text-blue-800">
+                    <p><span className="font-medium">Antibiotic:</span> {recommendations[selectedRecommendation].antibiotic_name || recommendations[selectedRecommendation].antibiotic}</p>
+                    <p><span className="font-medium">Dose:</span> {recommendations[selectedRecommendation].dose || 'See guidelines'}</p>
+                    <p><span className="font-medium">Interval:</span> {recommendations[selectedRecommendation].interval || 'Not specified'}</p>
+                    <p><span className="font-medium">Duration:</span> {recommendations[selectedRecommendation].duration || 'Per guidelines'}</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Manual entry details */}
+              {selectedRecommendation === 'manual' && manualEntry.antibiotic_name && (
+                <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4">
+                  <h4 className="font-medium text-green-900 mb-2">Sent Manual Entry:</h4>
+                  <div className="text-sm text-green-800">
+                    <p><span className="font-medium">Antibiotic:</span> {manualEntry.antibiotic_name}</p>
+                    <p><span className="font-medium">Dose:</span> {manualEntry.dose || 'Not specified'}</p>
+                    <p><span className="font-medium">Interval:</span> {manualEntry.interval || 'Not specified'}</p>
+                    <p><span className="font-medium">Duration:</span> {manualEntry.duration || 'Not specified'}</p>
+                    <p><span className="font-medium">Route:</span> {manualEntry.route || 'Not specified'}</p>
+                  </div>
+                </div>
+              )}
+              
+              <p className="text-xs text-gray-500 mt-2">
+                You will be redirected to the dashboard in a few seconds...
+              </p>
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  navigate('/');
+                }}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 transition-colors"
+              >
+                Continue to Dashboard
+              </button>
             </div>
           </div>
         </div>
