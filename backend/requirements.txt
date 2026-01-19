@@ -1,0 +1,18 @@
+# Django and Core Packages
+Django
+djangorestframework
+django-cors-headers
+
+# Database
+# SQLite is included with Python, no additional package needed
+
+# CSV and Data Processing
+pandas
+numpy
+
+# Utilities
+python-dateutil
+pytz
+
+# Development Tools (optional)
+ipython
