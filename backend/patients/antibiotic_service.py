@@ -1,4 +1,4 @@
-from patients.models import Patient, AntibioticDosing
+from patients.models import Patient, AntibioticDosing, Condition
 from django.db.models import Q
 import re
 from .antibiotic_matcher import AntibioticMatcher
@@ -10,8 +10,8 @@ class AntibioticRecommendationService:
     @staticmethod
     def get_recommendations_for_patient(patient):
         """
-        Get antibiotic recommendations based on patient data.
-        SIMILARITY MATCHING: Returns most similar antibiotic names, no random defaults.
+        Get antibiotic recommendations based on patient's DIAGNOSIS (condition).
+        Looks up AntibioticDosing records linked to the patient's diagnosis1.
         """
         try:
             if not isinstance(patient, Patient):
@@ -34,66 +34,54 @@ class AntibioticRecommendationService:
             # Analyze current antibiotic first
             current_antibiotic_analysis = AntibioticRecommendationService._analyze_current_antibiotic(patient)
             
-            # SIMILARITY MATCHING: Only proceed if we have a current antibiotic
-            if not hasattr(patient, 'antibiotics') or not patient.antibiotics:
+            # Get patient's diagnosis
+            diagnosis = getattr(patient, 'diagnosis1', None)
+            if not diagnosis:
                 return {
                     'recommendations': [],
                     'current_antibiotic_analysis': current_antibiotic_analysis,
-                    'message': 'No current antibiotic specified - Cannot provide recommendations',
-                    'status': 'no_current_antibiotic'
+                    'message': 'No diagnosis specified - Cannot provide recommendations',
+                    'status': 'no_diagnosis'
                 }
             
-            # Get similar matches for current antibiotic
-            similar_matches = AntibioticRecommendationService._get_exact_antibiotic_matches(patient)
+            # Get recommendations by diagnosis/condition
+            recommendations = AntibioticRecommendationService._get_recommendations_by_diagnosis(patient, diagnosis)
             
-            if not similar_matches:
-                return {
-                    'recommendations': [],
-                    'current_antibiotic_analysis': current_antibiotic_analysis,
-                    'message': f'No similar antibiotics found in database for "{patient.antibiotics}" - No recommendations available',
-                    'status': 'no_similar_match'
-                }
-            
-            # Get patient's CrCl with fallback
-            try:
-                crcl = float(patient.cockcroft_gault_crcl) if patient.cockcroft_gault_crcl else 60.0
-            except (ValueError, TypeError):
-                crcl = 60.0  # Default to normal kidney function
-            
-            # Validate CrCl range
-            if crcl < 0 or crcl > 200:
-                crcl = 60.0  # Reset to normal if unrealistic
-            
-            # Filter similar matches by clinical criteria (CrCl, allergies, etc.)
-            clinically_appropriate_matches = AntibioticRecommendationService._filter_exact_matches_by_clinical_criteria(
-                similar_matches, patient, crcl
-            )
-            
-            if not clinically_appropriate_matches:
-                return {
-                    'recommendations': [],
-                    'current_antibiotic_analysis': current_antibiotic_analysis,
-                    'message': f'Similar antibiotics found but not appropriate for patient (contraindications or kidney function)',
-                    'status': 'similar_but_contraindicated'
-                }
-            
-            # Rank the similar matches
-            ranked_recommendations = AntibioticRecommendationService._rank_exact_matches(
-                clinically_appropriate_matches, patient
-            )
-            
-            # Determine match quality for message
-            match_quality = "Similar match" if len(clinically_appropriate_matches) > 0 else "Exact match"
+            if not recommendations:
+                # Fallback: try similarity matching on current antibiotic
+                if hasattr(patient, 'antibiotics') and patient.antibiotics:
+                    similar_matches = AntibioticRecommendationService._get_exact_antibiotic_matches(patient)
+                    if similar_matches:
+                        try:
+                            crcl = float(patient.cockcroft_gault_crcl) if patient.cockcroft_gault_crcl else 60.0
+                        except (ValueError, TypeError):
+                            crcl = 60.0
+                        
+                        clinically_appropriate = AntibioticRecommendationService._filter_exact_matches_by_clinical_criteria(
+                            similar_matches, patient, crcl
+                        )
+                        if clinically_appropriate:
+                            recommendations = AntibioticRecommendationService._rank_exact_matches(
+                                clinically_appropriate, patient
+                            )
+                
+                if not recommendations:
+                    return {
+                        'recommendations': [],
+                        'current_antibiotic_analysis': current_antibiotic_analysis,
+                        'message': f'No recommendations found for diagnosis: {diagnosis}',
+                        'status': 'no_recommendations'
+                    }
             
             return {
-                'recommendations': ranked_recommendations,
+                'recommendations': recommendations,
                 'current_antibiotic_analysis': current_antibiotic_analysis,
-                'message': f'{match_quality} found: {len(ranked_recommendations)} dosing option(s) for "{patient.antibiotics}"',
-                'status': 'similarity_match_success'
+                'message': f'Found {len(recommendations)} recommendation(s) for "{diagnosis}"',
+                'status': 'success'
             }
             
         except Exception as e:
-            # Log the error (in production, use proper logging)
+            # Log the error
             print(f"Error in get_recommendations_for_patient: {str(e)}")
             
             return {
@@ -102,6 +90,83 @@ class AntibioticRecommendationService:
                 'message': f'System error: {str(e)}',
                 'status': 'system_error'
             }
+    
+    @staticmethod
+    def _get_recommendations_by_diagnosis(patient, diagnosis):
+        """
+        Get antibiotic dosing recommendations based on patient's diagnosis.
+        Matches diagnosis1 to Condition name in AntibioticDosing table.
+        """
+        diagnosis_lower = diagnosis.lower().strip()
+        
+        # Find matching condition(s)
+        matching_conditions = Condition.objects.filter(
+            Q(name__iexact=diagnosis) | 
+            Q(name__icontains=diagnosis_lower) |
+            Q(description__icontains=diagnosis_lower)
+        )
+        
+        if not matching_conditions.exists():
+            return []
+        
+        # Get patient's CrCl
+        try:
+            crcl = float(patient.cockcroft_gault_crcl) if patient.cockcroft_gault_crcl else 60.0
+        except (ValueError, TypeError):
+            crcl = 60.0
+        
+        # Get allergies
+        allergies = (getattr(patient, 'allergies', '') or '').lower()
+        
+        # Get dosing recommendations for matching conditions
+        dosings = AntibioticDosing.objects.filter(
+            condition__in=matching_conditions
+        ).select_related('condition', 'severity')
+        
+        recommendations = []
+        seen_antibiotics = set()  # Avoid duplicates
+        
+        for dosing in dosings:
+            # Skip if already seen this antibiotic
+            antibiotic_key = f"{dosing.antibiotic}_{dosing.interval}"
+            if antibiotic_key in seen_antibiotics:
+                continue
+            seen_antibiotics.add(antibiotic_key)
+            
+            # Check CrCl compatibility
+            if dosing.crcl_min is not None and dosing.crcl_max is not None:
+                if not (dosing.crcl_min <= crcl <= dosing.crcl_max):
+                    continue
+            
+            # Check allergies
+            if allergies and 'none' not in allergies:
+                antibiotic_name = dosing.antibiotic.lower()
+                if any(allergen in antibiotic_name for allergen in allergies.split(',')):
+                    continue
+            
+            # Build recommendation object
+            route_str = ', '.join(dosing.route) if isinstance(dosing.route, list) else str(dosing.route or '')
+            
+            recommendations.append({
+                'antibiotic': dosing.antibiotic,
+                'dose': dosing.dose or 'As prescribed',
+                'route': route_str,
+                'interval': dosing.interval or '',
+                'duration': dosing.duration or '',
+                'remarks': dosing.remark or '',
+                'condition': dosing.condition.name,
+                'severity': dosing.severity.level if dosing.severity else 'Standard',
+                'crcl_range': f"{dosing.crcl_min or ''}-{dosing.crcl_max or ''}" if dosing.crcl_min or dosing.crcl_max else 'Any',
+                'dialysis_type': dosing.dialysis_type or 'none',
+                'patient_type': dosing.patient_type or 'adult',
+                'rationale': f'Recommended for {dosing.condition.name}',
+                'score': 10  # Base score
+            })
+        
+        # Sort by antibiotic name
+        recommendations.sort(key=lambda x: x['antibiotic'])
+        
+        return recommendations
     
     @staticmethod
     def _get_exact_antibiotic_matches(patient):
@@ -153,9 +218,10 @@ class AntibioticRecommendationService:
         allergies = (patient.allergies or '').lower()
         
         for antibiotic in exact_matches:
-            # Check CrCl compatibility
-            if not AntibioticRecommendationService._is_crcl_compatible(antibiotic.crcl_range, crcl):
-                continue
+            # Check CrCl compatibility using crcl_min and crcl_max fields
+            if antibiotic.crcl_min is not None and antibiotic.crcl_max is not None:
+                if not (antibiotic.crcl_min <= crcl <= antibiotic.crcl_max):
+                    continue
             
             # Basic allergy check - skip if antibiotic name is in allergies
             antibiotic_name = antibiotic.antibiotic.lower()
@@ -365,27 +431,16 @@ class AntibioticRecommendationService:
         all_antibiotics = AntibioticDosing.objects.all()
         
         for antibiotic in all_antibiotics:
-            # Check CrCl compatibility
-            if not AntibioticRecommendationService._is_crcl_compatible(antibiotic.crcl_range, crcl):
-                continue
-            
-            # Check pathogen effectiveness
-            if pathogen and not AntibioticRecommendationService._is_pathogen_effective(
-                antibiotic.pathogen_effectiveness, pathogen
-            ):
-                continue
-            
-            # Check infection type compatibility
-            if diagnosis and not AntibioticRecommendationService._is_infection_compatible(
-                antibiotic.infection_types, diagnosis
-            ):
-                continue
+            # Check CrCl compatibility using crcl_min and crcl_max
+            if antibiotic.crcl_min is not None and antibiotic.crcl_max is not None:
+                if not (antibiotic.crcl_min <= crcl <= antibiotic.crcl_max):
+                    continue
             
             # Check allergies/contraindications
-            if allergies and AntibioticRecommendationService._has_contraindication(
-                antibiotic.contraindications, allergies
-            ):
-                continue
+            if allergies:
+                antibiotic_name = antibiotic.antibiotic.lower()
+                if any(allergen.lower() in antibiotic_name for allergen in allergies.split(',')):
+                    continue
             
             suitable.append(antibiotic)
         
@@ -556,7 +611,8 @@ class AntibioticRecommendationService:
             # PRIORITY 1: Check if this IS the current antibiotic (exact match)
             is_current_antibiotic = (current_antibiotic_best_match and 
                                    antibiotic.antibiotic == current_antibiotic_best_match.antibiotic and
-                                   antibiotic.crcl_range == current_antibiotic_best_match.crcl_range)
+                                   antibiotic.crcl_min == current_antibiotic_best_match.crcl_min and
+                                   antibiotic.crcl_max == current_antibiotic_best_match.crcl_max)
             
             if is_current_antibiotic:
                 # Check if current antibiotic is appropriate
@@ -572,9 +628,10 @@ class AntibioticRecommendationService:
                 else:
                     score += 5   # Still give some bonus for continuity, but less
             
-            # Bonus points for exact pathogen match
-            if patient.pathogen and antibiotic.pathogen_effectiveness:
-                if patient.pathogen in antibiotic.pathogen_effectiveness:
+            # Bonus points for pathogen match using pathogens ManyToMany field
+            if patient.pathogen and antibiotic.pathogens.exists():
+                pathogen_names = list(antibiotic.pathogens.values_list('name', flat=True))
+                if any(p.lower() in patient.pathogen.lower() for p in pathogen_names):
                     score += 2
             
             # Route preference based on patient stability
@@ -756,9 +813,10 @@ class AntibioticRecommendationService:
         if is_current_antibiotic:
             rationale_parts.append("Continue current therapy")
             
-            # Add clinical justification for continuing
-            if patient.pathogen and antibiotic.pathogen_effectiveness:
-                if patient.pathogen in antibiotic.pathogen_effectiveness:
+            # Add clinical justification for continuing using pathogens field
+            if patient.pathogen and antibiotic.pathogens.exists():
+                pathogen_names = list(antibiotic.pathogens.values_list('name', flat=True))
+                if any(p.lower() in patient.pathogen.lower() for p in pathogen_names):
                     rationale_parts.append(f"Excellent coverage for {patient.pathogen}")
                 else:
                     rationale_parts.append("Empiric coverage maintained")
@@ -768,9 +826,10 @@ class AntibioticRecommendationService:
             
         else:
             # This is an alternative recommendation
-            # Pathogen coverage
-            if patient.pathogen and antibiotic.pathogen_effectiveness:
-                if patient.pathogen in antibiotic.pathogen_effectiveness:
+            # Pathogen coverage using pathogens field
+            if patient.pathogen and antibiotic.pathogens.exists():
+                pathogen_names = list(antibiotic.pathogens.values_list('name', flat=True))
+                if any(p.lower() in patient.pathogen.lower() for p in pathogen_names):
                     rationale_parts.append(f"Excellent coverage for {patient.pathogen}")
                 else:
                     rationale_parts.append("Broad-spectrum empiric coverage")
@@ -897,10 +956,11 @@ class AntibioticRecommendationService:
         serializable_matches = []
         for match in explanation.get('matches', [])[:3]:
             if match.get('antibiotic'):
+                ab = match['antibiotic']
                 serializable_matches.append({
-                    'antibiotic_name': match['antibiotic'].antibiotic,
-                    'crcl_range': match['antibiotic'].crcl_range,
-                    'route': match['antibiotic'].route,
+                    'antibiotic_name': ab.antibiotic,
+                    'crcl_range': f"{ab.crcl_min or ''}-{ab.crcl_max or ''}" if ab.crcl_min or ab.crcl_max else 'Any',
+                    'route': ab.route,
                     'dose': match['antibiotic'].dose,
                     'interval': match['antibiotic'].interval,
                     'score': match.get('score', 0),
@@ -913,10 +973,11 @@ class AntibioticRecommendationService:
         serializable_best_match = None
         if explanation.get('best_match') and explanation['best_match'].get('antibiotic'):
             best_match = explanation['best_match']
+            ab = best_match['antibiotic']
             serializable_best_match = {
-                'antibiotic_name': best_match['antibiotic'].antibiotic,
-                'crcl_range': best_match['antibiotic'].crcl_range,
-                'route': best_match['antibiotic'].route,
+                'antibiotic_name': ab.antibiotic,
+                'crcl_range': f"{ab.crcl_min or ''}-{ab.crcl_max or ''}" if ab.crcl_min or ab.crcl_max else 'Any',
+                'route': ab.route,
                 'dose': best_match['antibiotic'].dose,
                 'interval': best_match['antibiotic'].interval,
                 'score': best_match.get('score', 0),
@@ -1008,19 +1069,22 @@ class AntibioticRecommendationService:
         # Check CrCl appropriateness
         if hasattr(patient, 'cockcroft_gault_crcl') and patient.cockcroft_gault_crcl:
             patient_crcl = float(patient.cockcroft_gault_crcl)
-            if not AntibioticRecommendationService._is_crcl_compatible(antibiotic_obj.crcl_range, patient_crcl):
-                issues.append('Dose may need adjustment for current kidney function')
-                recommendations.append('Consider dose adjustment based on CrCl')
+            # Check using crcl_min and crcl_max
+            if antibiotic_obj.crcl_min is not None and antibiotic_obj.crcl_max is not None:
+                if not (antibiotic_obj.crcl_min <= patient_crcl <= antibiotic_obj.crcl_max):
+                    issues.append('Dose may need adjustment for current kidney function')
+                    recommendations.append('Consider dose adjustment based on CrCl')
         
-        # Check pathogen coverage
-        if hasattr(patient, 'pathogen') and patient.pathogen and antibiotic_obj.pathogen_effectiveness:
-            if not AntibioticRecommendationService._is_pathogen_effective(antibiotic_obj.pathogen_effectiveness, patient.pathogen):
+        # Check pathogen coverage using pathogens ManyToMany field
+        if hasattr(patient, 'pathogen') and patient.pathogen and antibiotic_obj.pathogens.exists():
+            pathogen_names = list(antibiotic_obj.pathogens.values_list('name', flat=True))
+            if not any(p.lower() in patient.pathogen.lower() for p in pathogen_names):
                 issues.append('May have limited effectiveness against identified pathogen')
                 recommendations.append('Consider pathogen-specific therapy')
         
-        # Check infection type appropriateness
-        if hasattr(patient, 'diagnosis1') and patient.diagnosis1 and antibiotic_obj.infection_types:
-            if not AntibioticRecommendationService._is_infection_compatible(antibiotic_obj.infection_types, patient.diagnosis1):
+        # Check infection type appropriateness using condition field
+        if hasattr(patient, 'diagnosis1') and patient.diagnosis1 and hasattr(antibiotic_obj, 'condition') and antibiotic_obj.condition:
+            if patient.diagnosis1.lower() not in antibiotic_obj.condition.name.lower():
                 issues.append('May not be optimal for current infection type')
                 recommendations.append('Consider infection-specific therapy')
         

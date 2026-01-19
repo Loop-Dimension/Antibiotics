@@ -148,12 +148,11 @@ class AntibioticMatcher:
                 # Add clinical appropriateness bonus if patient CrCl is provided
                 clinical_bonus = 0
                 if patient_crcl is not None:
-                    # Import here to avoid circular imports
-                    from .antibiotic_service import AntibioticRecommendationService
+                    # Check CrCl compatibility using crcl_min and crcl_max
+                    is_crcl_appropriate = True
+                    if db_ab.crcl_min is not None and db_ab.crcl_max is not None:
+                        is_crcl_appropriate = db_ab.crcl_min <= patient_crcl <= db_ab.crcl_max
                     
-                    is_crcl_appropriate = AntibioticRecommendationService._is_crcl_compatible(
-                        db_ab.crcl_range, patient_crcl
-                    )
                     if is_crcl_appropriate:
                         clinical_bonus = 50  # Big bonus for clinically appropriate matches
                 

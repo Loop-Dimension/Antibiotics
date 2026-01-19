@@ -241,20 +241,43 @@ class AntibioticRecommendationEngine:
                 except Condition.DoesNotExist:
                     continue
         
-        # Fuzzy matching for partial matches
+        # Exact match check (case-insensitive)
         all_conditions = Condition.objects.all()
         for condition in all_conditions:
-            condition_lower = condition.name.lower()
-            if any(word in diagnosis for word in condition_lower.split()):
+            if condition.name.lower() == diagnosis:
                 self.matched_condition = condition
                 self.filter_steps.append({
                     'step': 1,
                     'name': 'Condition Identification',
                     'input': f"Patient diagnosis: '{self.patient.diagnosis1}'",
-                    'output': f"Fuzzy matched condition: '{condition.name}'",
+                    'output': f"Exact matched condition: '{condition.name}'",
                     'result': 'success'
                 })
                 return condition
+        
+        # Fuzzy matching for partial matches - prefer shortest match (most specific)
+        best_match = None
+        best_match_length = float('inf')
+        
+        for condition in all_conditions:
+            condition_lower = condition.name.lower()
+            # Check if all words from condition name are in the diagnosis
+            if all(word in diagnosis for word in condition_lower.split()):
+                # Prefer shorter matches (more specific)
+                if len(condition_lower) < best_match_length:
+                    best_match = condition
+                    best_match_length = len(condition_lower)
+        
+        if best_match:
+            self.matched_condition = best_match
+            self.filter_steps.append({
+                'step': 1,
+                'name': 'Condition Identification',
+                'input': f"Patient diagnosis: '{self.patient.diagnosis1}'",
+                'output': f"Fuzzy matched condition: '{best_match.name}'",
+                'result': 'success'
+            })
+            return best_match
         
         self.filter_steps.append({
             'step': 1,
@@ -539,19 +562,60 @@ class AntibioticRecommendationEngine:
             'result': 'success'
         })
     
+    def _get_related_conditions(self) -> List[Condition]:
+        """Find related conditions based on keyword matching"""
+        if not self.matched_condition:
+            return []
+        
+        related_conditions = [self.matched_condition]
+        condition_name = self.matched_condition.name.lower()
+        
+        # Extract key medical terms from the matched condition
+        key_terms = set(condition_name.split())
+        
+        # Find other conditions that share key medical terms
+        all_conditions = Condition.objects.exclude(id=self.matched_condition.id)
+        
+        for condition in all_conditions:
+            other_name = condition.name.lower()
+            other_terms = set(other_name.split())
+            
+            # Check if there's significant overlap (at least 2 common key medical terms)
+            common_terms = key_terms & other_terms
+            # Filter out common words
+            medical_common_terms = common_terms - {'and', 'or', 'of', 'the', 'a', 'an', 'in', 'on', 'with'}
+            
+            if len(medical_common_terms) >= 2:
+                related_conditions.append(condition)
+        
+        return related_conditions
+    
     def _get_filtered_recommendations(self) -> List[AntibioticDosing]:
-        """Step 7: Apply all filters to get recommendations"""
+        """Step 7: Apply all filters to get recommendations from matched and related conditions"""
         if not all([self.matched_condition, self.matched_severity, self.patient_type]):
             return []
         
-        # Start with base query
+        # Get related conditions to expand recommendations
+        related_conditions = self._get_related_conditions()
+        
+        # Start with base query including related conditions
         queryset = AntibioticDosing.objects.filter(
-            condition=self.matched_condition,
-            severity=self.matched_severity,
+            condition__in=related_conditions,
+            severity__condition__in=related_conditions,
             patient_type=self.patient_type
         )
         
         initial_count = queryset.count()
+        
+        # Log related conditions used
+        if len(related_conditions) > 1:
+            self.filter_steps.append({
+                'step': 6.5,
+                'name': 'Related Conditions Expansion',
+                'input': f"Primary condition: '{self.matched_condition.name}'",
+                'output': f"Including {len(related_conditions)} related conditions: {', '.join([c.name for c in related_conditions])}",
+                'result': 'success'
+            })
         
         # Filter by pathogen
         if self.target_pathogens:
@@ -577,19 +641,16 @@ class AntibioticRecommendationEngine:
         else:
             pathogen_filtered_count = queryset.count()
         
-        # Filter by renal function
+        # Filter by renal function - INCLUSIVE approach to show all options
         if self.dialysis_type != 'none':
             # Patient is on dialysis
             renal_query = Q(dialysis_type=self.dialysis_type)
+            queryset = queryset.filter(renal_query)
         else:
-            # Normal filtering by CrCl range
-            renal_query = Q(
-                crcl_min__lte=self.crcl_value,
-                crcl_max__gte=self.crcl_value,
-                dialysis_type='none'
-            )
+            # Show ALL medications for this condition, not just exact CrCl matches
+            # This allows clinicians to see all options and make informed decisions
+            queryset = queryset.filter(dialysis_type='none')
         
-        queryset = queryset.filter(renal_query)
         renal_filtered_count = queryset.count()
         
         # Filter out allergic antibiotics

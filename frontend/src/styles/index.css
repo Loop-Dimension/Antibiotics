@@ -1,1 +1,74 @@
 @import "tailwindcss";
+
+/* Increase base font size globally */
+html {
+  font-size: 18px; /* Default is 16px, increasing to 18px */
+}
+
+body {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* Larger text for better readability */
+.text-sm {
+  font-size: 0.95rem !important;
+}
+
+.text-xs {
+  font-size: 0.85rem !important;
+}
+
+.text-base {
+  font-size: 1.1rem !important;
+}
+
+.text-lg {
+  font-size: 1.25rem !important;
+}
+
+.text-xl {
+  font-size: 1.4rem !important;
+}
+
+.text-2xl {
+  font-size: 1.65rem !important;
+}
+
+.text-3xl {
+  font-size: 2rem !important;
+}
+
+/* Table text sizes */
+table {
+  font-size: 1rem;
+}
+
+th {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+td {
+  font-size: 1rem;
+}
+
+/* Button text */
+button {
+  font-size: 1rem;
+}
+
+/* Input and select text */
+input, select, textarea {
+  font-size: 1rem;
+}
+
+/* Labels */
+label {
+  font-size: 1rem;
+}
+
+/* Modal and dialog text */
+.modal-title, h1, h2, h3, h4 {
+  line-height: 1.3;
+}

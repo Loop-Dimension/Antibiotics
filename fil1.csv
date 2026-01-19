@@ -1,0 +1,231 @@
+﻿Case_no ,Male,Admission,Diagnosis1,Diagnosis2,Date,Age,BW,Height,WBC,Hb,PLT,AST(IU/L),ALT(IU/L),SCr (mg/dL),Cockcroft-Gault CrCl,CRP(mg/L),Pathogen,Antibiogram,Sample,Antibiotics1,Antibiotics2,
+1,0,1,urinary track infection,urinary track infection,2025.12.17,70,60,156,10800,15.0 ,299000,22,19,0.93,53.31541219,6.54,Escherichia coli,"Organism #1 : Escherichia coli
+
+ Ampicillin            R > =32
+ Amoxicillin/CA        S   4
+ Amikacin              S   4
+ Ceftazidime           S < =0.12
+ Ciprofloxacin         I   0.5
+ Cefotaxime            S < =0.25
+ Cefazolin             S < =4
+ Ertapenem             S < =0.12
+ Nitrofurantoin        S < =16
+ Cefepime              S < =0.12
+ Gentamicin            S < =1
+ Imipenem              S < =0.25
+ Meropenem             S < =0.25
+ Tobramycin            S < =1
+ Trimethoprim/Sulfa    R > =320
+ Piperacillin/Tazobac  S < =4",urine,iv piperacillin/tazobactam 2.25g q8hr,"IV ceftriaxone 1-2g q24hr
+IV cefotaxime 2g q8-12hr
+IV cefuroxime 0.75-1.5g q8hr
+PO cefpodoxime 200mg q12hr
+",
+2,0,1,ICH,urinary track infection,2025.12.09,91,45,155,5800,8.3,196000,27,3,0.55,47.32954545,14.31,Escherichia coli,"Organism #1 : Escherichia coli
+
+ Ampicillin            R > =32
+ Amoxicillin/CA        R > =32
+ Amikacin              S   2
+ Ceftazidime           R   32
+ Ciprofloxacin         I   0.5
+ Cefotaxime            R > =64
+ Cefazolin             R > =64
+ Ertapenem             S < =0.12
+ Nitrofurantoin        S < =16
+ Cefepime              SDD   4
+ Gentamicin            R > =16
+ Imipenem              S < =0.25
+ Meropenem             S < =0.25
+ Tobramycin            I   4
+ Trimethoprim/Sulfa    R > =320
+ Piperacillin/Tazobac  S < =4",urine,IV levofloxacin 750mg q24hr,"IV piperacillin/tazobactam 3.375g q6hr
+IV ertapenem 1g q24hr",
+3,1,1,complicated urinary track infection,complicated urinary track infection,2025.12.16,87,50,160,13200,12.5,116000,21,10,1.04,30.08146368,192.82,Proteus mirabilis,"Organism #1 : Proteus mirabilis 
+
+ Ampicillin            R >= 32
+ Amoxicillin/CA        I    16
+ Amikacin              S    4
+ Ceftazidime           S <= 0.12
+ Ciprofloxacin         I    0.5
+ Cefotaxime            R >= 64
+ Cefazolin             R >= 64
+ Ertapenem             S <= 0.12
+ Nitrofurantoin        R    128
+ Cefepime              S    2
+ Gentamicin            R    8
+ Imipenem              R    8
+ Meropenem             S <= 0.25
+ Tobramycin            I    4
+ Trimethoprim/Sulfa    R >= 320
+ Piperacillin/Tazobac  S <= 4","urine, blood",IV flumarin 1g q12hr,"IV piperacillin/tazobactam 2.25g q6hr
+IV ertapenem 1g q24hr",
+4,1,0,acute pyelitis,acute pyelitis,2026.01.01,63,69.6,162,15.1,12.1,195000,66,102,0.68,93.04166667,123.29,Escherichia coli,"Organism #1 : Escherichia coli
+
+ Ampicillin            S   4
+ Amoxicillin/CA        S < =2
+ Amikacin              S   2
+ Ceftazidime           S < =0.12
+ Ciprofloxacin         S < =0.06
+ Cefotaxime            S < =0.25
+ Cefazolin             S < =4
+ Ertapenem             S < =0.12
+ Nitrofurantoin        S < =16
+ Cefepime              S < =0.12
+ Gentamicin            S < =1
+ Imipenem              S < =0.25
+ Meropenem             S < =0.25
+ Tobramycin            S < =1
+ Trimethoprim/Sulfa    S < =20
+ Piperacillin/Tazobac  S < =4",urine,IV piperacillin/tazobactam 4.5g q6hr,"IV ciprofloxacin 200-400mg q12hr
+IV levofloxacin 500-750 mg q24hr
+IV ceftriaxone 1-2g q24hr
+IV cefotaxime 2g q8-12hr
+IV cefuroxime 0.75-1.5g q8hr
+PO ciprofloxacin 250-500mg q12hr
+PO levofloxacin 500-750 mg q24hr
+PO cefpodoxime 200mg q12hr",
+5,0,1,complicated urinary track infection,complicated urinary track infection,2025.12.24,76,53.5,155,10900,10.4,89000,25,10,4.47,9.043002734,300,Enterobacter hormaechei,"Organism #1 : Enterobacter hormaechei 
+
+ Ampicillin            R >= 32
+ Amoxicillin/CA        R >= 32
+ Amikacin              S <= 1
+ Ceftazidime           S <= 0.12
+ Ciprofloxacin         S <= 0.06
+ Cefotaxime            S <= 0.25
+ Cefazolin             R >= 64
+ Ertapenem             S <= 0.12
+ Cefepime              S <= 0.12
+ Gentamicin            S <= 1
+ Imipenem              S    1
+ Meropenem             S <= 0.25
+ Tobramycin            S <= 1
+ Trimethoprim/Sulfa    S <= 20
+ Piperacillin/Tazobac  S <= 4","urine, blood",IV piperacillin/tazobactam 2.25g q6hr,"IV ciprofloxacin 200-400mg q24hr
+IV ceftriaxone 1-2g q24hr
+PO ciprofloxacin 250-500mg q12hr",
+6,0,1,urinary track infection,urinary track infection,2025.12.18,89,62,161,17700,13.5,201000,18,8,0.95,39.29385965,26.23,Klebsiella pneumoniae,"Organism #1 : Klebsiella pneumoniae (CRE) [CODE 135]
+
+ Ampicillin            R > =32
+ Amoxicillin/CA        I   16
+ Amikacin              I   8
+ Ceftazidime           R > =64
+ Ciprofloxacin         R > =4
+ Cefotaxime            R > =64
+ Cefazolin             R > =64
+ Ertapenem             R > =8
+ Nitrofurantoin        R   256
+ Cefepime              R > =32
+ Gentamicin            S < =1
+ Imipenem              R   8
+ Meropenem             R   8
+ Tobramycin            R > =16
+ Trimethoprim/Sulfa    S < =20
+ Piperacillin/Tazobac  R > =128",urine,IV piperacillin/tazobactam 3.375g q6hr,IV ceftazidime/avibactam 1.25g q8hr,
+7,0,1,urinary track infection,urinary track infection,2026.01.04,85,45,150,12000,8.9,173000,147,48,1.16,25.18857759,141.01,Escherichia coli,"Organism #1 : Escherichia coli
+
+ Ampicillin            R > =32
+ Amoxicillin/CA        R > =32
+ Amikacin              R   16
+ Ceftazidime           R   16
+ Ciprofloxacin         R > =4
+ Cefotaxime            R   16
+ Cefazolin             R > =64
+ Ertapenem             S < =0.12
+ Nitrofurantoin        S < =16
+ Cefepime              S   2
+ Gentamicin            S < =1
+ Imipenem              S < =0.25
+ Meropenem             S < =0.25
+ Tobramycin            R > =16
+ Trimethoprim/Sulfa    R > =320
+ Piperacillin/Tazobac  S   8",urine,IV piperacillin/tazobactam 3.375g q6hr,"IV piperacillin/tazobactam 2.25g q6hr
+IV ertapenem 500mg q24hr         ",
+8,1,1,urinary track infection,urinary track infection,2025.12.30,76,77.4,170,7500,11.1,176000,28,13,0.64,91.375,179..94,Escherichia coli,"Organism #1 : Escherichia coli
+
+ Ampicillin            R > =32
+ Amoxicillin/CA        R > =32
+ Amikacin              S   2
+ Ceftazidime           I   8
+ Ciprofloxacin         I   0.5
+ Cefotaxime            S   1
+ Cefazolin             R > =64
+ Ertapenem             S < =0.12
+ Nitrofurantoin        S < =16
+ Cefepime              S < =0.12
+ Gentamicin            S < =1
+ Imipenem              S < =0.25
+ Meropenem             S < =0.25
+ Tobramycin            S < =1
+ Trimethoprim/Sulfa    S < =20
+ Piperacillin/Tazobac  S < =4","urine, blood",IV ertapenem 1g q24hr,"IV piperacillin/tazobactam 3..375g q6hr
+IV ertapenem 1g q24hr         ",
+9,1,1,urinary track infection,urinary track infection,2025.12.30,70,71.5,165,1700,8,67000,19,20,1.23,127.6253388,7.55,Pseudomonas aeruginosa,"Organism #1 : Pseudomonas aeruginosa 
+
+ Amikacin              S    2
+ Aztreonam             S    4
+ Ceftazidime           S    2
+ Ciprofloxacin         S    0.12
+ Imipenem              S    2
+ Levofloxacin          S    0.25
+ Meropenem             S    2
+ Tobramycin            S <= 1
+ Piperacillin          R    16
+ Piperacillin/Tazobac  R >= 128",urine,IV ciprofloxacin 400mg q8hr,"IV ciprofloxacin 400mg q8hr
+IV ceftazidime 1-2g q8hr",
+10,0,1,subdural hemorrhage,pneumonia,2026.01.02,16,49,164,9300,8.1,342000,49,38,0.25,286.9222222,99.2,Klebsiella aerogenes,"Organism #1 : Klebsiella aerogenes (구, Enterobacter aerogenes) 
+
+ Ampicillin            R >= 32
+ Amoxicillin/CA        R >= 32
+ Amikacin              S <= 1
+ Ceftazidime           R    32
+ Ciprofloxacin         R    1
+ Cefotaxime            R    16
+ Cefazolin             R >= 64
+ Ertapenem             S    0.25
+ Cefepime              S    0.25
+ Gentamicin            S <= 1
+ Imipenem              S    1
+ Meropenem             S <= 0.25
+ Tobramycin            S <= 1
+ Trimethoprim/Sulfa    S <= 20
+ Piperacillin/Tazobac  R >= 128",sputum,IV piperacillin/tazobactam 3.375g q6hr,"IV cefepimie 2g q8hr
+IV ertapenem 1g q24hr
+IV imipenem 500mg q6hr
+IV meropenem 1g q8hr",
+11,1,1,subdural hemorrhage,pneumonia,2025.12.14,77,68,170,6000,8.6,231000,14,6,0.79,75.3164557,52.54,Klebsiella pneumoniae,"Organism #1 : Klebsiella pneumoniae
+
+ Ampicillin            R   16
+ Amoxicillin/CA        S < =2
+ Amikacin              S   2
+ Ceftazidime           S < =0.12
+ Ciprofloxacin         S < =0.06
+ Cefotaxime            S < =0.25
+ Cefazolin             S < =4
+ Ertapenem             S < =0.12
+ Cefepime              S < =0.12
+ Gentamicin            S < =1
+ Imipenem              S < =0.25
+ Meropenem             S < =0.25
+ Tobramycin            S < =1
+ Trimethoprim/Sulfa    S < =20
+ Piperacillin/Tazobac  S < =4",sputum,IV piperacillin/tazobactam 4.5h q6hr,"IV ceftriaxone 2g q24hr
+IV ceftazidime 2g q8hr
+IV levofloxacin 750mg q24hr
+IV moxifloxacin 400mg q24hr
+IV piperacillin/tazobactam 4.5g q6hr",
+12,1,1,pneumonia,pneumonia,2025.01.06,83,55.5,165,21400,9.5,314000,14,11,1.09,40.30963303,154.54,Staphylococcus aureus,"Organism #1 : Staphylococcus aureus (MRSA) [ND050200]
+
+ Clindamycin         R   0.25
+ Ciprofloxacin       R   4
+ Erythromycin        R > =8
+ Gentamicin          S < =0.5
+ Levofloxacin        R   4
+ Linezolid           S   1
+ Oxacillin           R > =4
+ Benzylpenicillin    R > =0.5
+ Rifampin            S < =0.03
+ Trimethoprim/Sulfa  R > =320
+ Tetracycline        S < =1
+ Teicoplanin         S < =0.5
+ Vancomycin          S   1","sputum, blood",IV teicoplanin 600mg q12hr 3회 loading 후 q48hr,"IV vancomycin 15-20mg/kg q8-12hr
+IV teicoplanin 10-12mg/kg q12hr 3회 loading 후 q48hr",

@@ -11,14 +11,21 @@ class Patient(models.Model):
         ('O', 'Other'),
     ]
     
+    ADMISSION_CHOICES = [
+        (0, 'Outpatient'),
+        (1, 'Inpatient'),
+    ]
+    
     # Essential patient information - REQUIRED
     patient_id = models.AutoField(primary_key=True)
+    case_no = models.IntegerField(blank=True, null=True, help_text="Case number from CSV")
     name = models.CharField(max_length=255, help_text="Patient name")
     date_recorded = models.DateField(help_text="Date when patient data was recorded")
     
     # Demographics - Age required, Gender optional (sometimes unknown)
     age = models.PositiveIntegerField(validators=[MinValueValidator(0), MaxValueValidator(150)], help_text="Patient age")
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True, null=True, help_text="Patient gender")
+    admission = models.IntegerField(choices=ADMISSION_CHOICES, default=1, help_text="Admission type: 0=Outpatient, 1=Inpatient")
     
     # Physical measurements - Weight required for dosing, Height optional
     body_weight = models.DecimalField(max_digits=6, decimal_places=2, help_text="Weight in kg (required for antibiotic dosing)")
@@ -26,7 +33,7 @@ class Patient(models.Model):
     
     # Essential clinical data - Required for antibiotic decisions
     diagnosis1 = models.CharField(max_length=255, help_text="Primary diagnosis (required)")
-    body_temperature = models.DecimalField(max_digits=4, decimal_places=1, validators=[MinValueValidator(30), MaxValueValidator(50)], help_text="Temperature in Celsius")
+    body_temperature = models.DecimalField(max_digits=4, decimal_places=1, validators=[MinValueValidator(30), MaxValueValidator(50)], blank=True, null=True, help_text="Temperature in Celsius")
     
     # Essential lab values - Required for antibiotic selection and dosing
     scr = models.DecimalField(max_digits=5, decimal_places=2, help_text="Serum Creatinine (mg/dL) - required for dosing")
@@ -44,10 +51,12 @@ class Patient(models.Model):
     
     # Clinical information - Important for antibiotic selection
     pathogen = models.CharField(max_length=500, blank=True, default="Unknown", help_text="Identified pathogen (use 'Unknown' if not identified)")
+    antibiogram = models.TextField(blank=True, null=True, help_text="Antibiogram/sensitivity test results")
     sample_type = models.CharField(max_length=100, blank=True, default="Not specified", help_text="Sample type (blood, urine, sputum, etc.)")
     
     # Current treatment - Important for recommendations
-    antibiotics = models.CharField(max_length=500, blank=True, default="None", help_text="Current antibiotic treatment")
+    antibiotics = models.CharField(max_length=500, blank=True, default="None", help_text="Primary antibiotic treatment")
+    antibiotics2 = models.TextField(blank=True, null=True, help_text="Secondary/alternative antibiotic recommendations")
     allergies = models.CharField(max_length=500, blank=True, default="None", help_text="Patient allergies")
     
     # Secondary information - Optional

@@ -18,6 +18,8 @@ const ClinicalDashboard = () => {
   const [error, setError] = useState(null);
   const [editingDiagnosis2, setEditingDiagnosis2] = useState(false);
   const [diagnosis2Value, setDiagnosis2Value] = useState('');
+  const [editingDiagnosis1, setEditingDiagnosis1] = useState(false);
+  const [diagnosis1Value, setDiagnosis1Value] = useState('');
   const [editingRecommendations, setEditingRecommendations] = useState({});
   const [selectedRecommendation, setSelectedRecommendation] = useState(null);
   const [showManualEntry, setShowManualEntry] = useState(false);
@@ -60,6 +62,7 @@ const ClinicalDashboard = () => {
       const response = await patientsAPI.getPatient(id);
       setPatientData(response.data);
       setDiagnosis2Value(response.data.diagnosis2 || '');
+      setDiagnosis1Value(response.data.diagnosis1 || '');
       
       // Fetch recommended regimen
       fetchAIRecommendations(id);
@@ -205,6 +208,40 @@ const ClinicalDashboard = () => {
 
   const handleEditDiagnosis2 = () => {
     setEditingDiagnosis2(true);
+  };
+
+  const handleEditDiagnosis1 = () => {
+    setEditingDiagnosis1(true);
+  };
+
+  const handleSaveDiagnosis1 = async () => {
+    try {
+      const updatedData = {
+        ...patientData,
+        diagnosis1: diagnosis1Value
+      };
+      
+      await patientsAPI.updatePatient(patientId, updatedData);
+      
+      // Update local state
+      setPatientData(prev => ({
+        ...prev,
+        diagnosis1: diagnosis1Value
+      }));
+      
+      setEditingDiagnosis1(false);
+      
+      // Refresh recommendations after diagnosis change
+      fetchAIRecommendations(patientId);
+    } catch (error) {
+      console.error('Error updating diagnosis1:', error);
+      alert('Failed to update diagnosis. Please try again.');
+    }
+  };
+
+  const handleCancelDiagnosis1Edit = () => {
+    setDiagnosis1Value(patientData.diagnosis1 || '');
+    setEditingDiagnosis1(false);
   };
 
   const handleSaveDiagnosis2 = async () => {
@@ -484,21 +521,56 @@ const ClinicalDashboard = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-500">Current Abc:</label>
+                  <label className="text-xs font-medium text-gray-500">Current Antibiotic:</label>
                   <div className="text-sm text-gray-700">
                     {patientData.antibiotics && patientData.antibiotics !== 'None' ? patientData.antibiotics : 'None'}
                   </div>
                 </div>
 
-                {/* Diagnosis 1 */}
-                {patientData.diagnosis1 && (
-                  <div>
+                {/* Diagnosis 1 - Editable */}
+                <div>
+                  <div className="flex items-center justify-between">
                     <label className="text-xs font-medium text-gray-500">Current Diagnosis:</label>
-                    <div className="text-sm font-semibold text-gray-900">
-                      {patientData.diagnosis1}
-                    </div>
+                    {!editingDiagnosis1 && (
+                      <button
+                        onClick={handleEditDiagnosis1}
+                        className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        Edit
+                      </button>
+                    )}
                   </div>
-                )}
+                  {editingDiagnosis1 ? (
+                    <div className="space-y-2 mt-1">
+                      <input
+                        type="text"
+                        value={diagnosis1Value}
+                        onChange={(e) => setDiagnosis1Value(e.target.value)}
+                        placeholder="Enter diagnosis..."
+                        className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        autoFocus
+                      />
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={handleSaveDiagnosis1}
+                          className="px-3 py-1 bg-green-600 text-white text-xs rounded-md hover:bg-green-700"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={handleCancelDiagnosis1Edit}
+                          className="px-3 py-1 bg-gray-400 text-white text-xs rounded-md hover:bg-gray-500"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm font-semibold text-gray-900">
+                      {patientData.diagnosis1 || <span className="text-gray-400 italic">No diagnosis</span>}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -848,27 +920,77 @@ const ClinicalDashboard = () => {
                         </button>
                       </div>
                     </div>
+
+                    {/* Guideline Justification Section */}
+                    <div className="mt-6 border-t border-gray-200 pt-6">
+                      <h4 className="text-lg font-bold text-gray-900 mb-3">Guideline Justification</h4>
+                      <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+                        <div className="text-sm text-gray-700 space-y-2">
+                          <p><span className="font-semibold text-blue-700">Source:</span> IDSA Guidelines 2023; Korean Guidelines 2024</p>
+                          <p>Recommended regimens based on local resistance rates <span className="text-blue-600">(last update: Aug 2025)</span>.</p>
+                          <p>AI engine risk-adjusted using patient comorbidities, CrCl {patientData?.cockcroft_gault_crcl ? `${parseFloat(patientData.cockcroft_gault_crcl).toFixed(1)} mL/min` : 'N/A'}, and allergy profile.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Antibiogram Section */}
+                    {patientData.antibiogram && (
+                      <div className="mt-6 border-t border-gray-200 pt-6">
+                        <h4 className="text-lg font-bold text-gray-900 mb-3">Antibiogram</h4>
+                        <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+                          <pre className="text-xs overflow-auto max-h-64 whitespace-pre-wrap font-mono">
+                            {patientData.antibiogram}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
+                  <div className="py-4">
                     {recommendationData?.is_fallback ? (
-                      <div>
+                      <div className="text-center">
                         <div className="text-amber-600 font-medium">Limited Recommendations Available</div>
                         <div className="text-sm text-gray-600 mt-2 max-w-md mx-auto">
                           {recommendationData.message || "Showing general empirical therapy options. Consider pathogen-specific therapy when culture results are available."}
                         </div>
                       </div>
                     ) : recommendationData?.success === false ? (
-                      <div>
+                      <div className="text-center">
                         <div className="text-red-600 font-medium">No Clinical Recommendations Found</div>
                         <div className="text-sm text-gray-600 mt-2">
                           No antibiotic recommendations available for this patient profile.
                         </div>
                       </div>
                     ) : (
-                      <div>
+                      <div className="text-center">
                         <div className="text-gray-600 font-medium">Select a patient to view recommendations</div>
                         <div className="text-sm text-gray-500 mt-2">Click "Get Recommendations" to load clinical guidance.</div>
+                      </div>
+                    )}
+
+                    {/* Guideline Justification Section - shown when patient is selected */}
+                    {patientData && (
+                      <div className="mt-6 border-t border-gray-200 pt-6">
+                        <h4 className="text-lg font-bold text-gray-900 mb-3">Guideline Justification</h4>
+                        <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+                          <div className="text-sm text-gray-700 space-y-2">
+                            <p><span className="font-semibold text-blue-700">Source:</span> IDSA Guidelines 2023; Korean Guidelines 2024</p>
+                            <p>Recommended regimens based on local resistance rates <span className="text-blue-600">(last update: Aug 2025)</span>.</p>
+                            <p>AI engine risk-adjusted using patient comorbidities, CrCl {patientData.cockcroft_gault_crcl ? `${parseFloat(patientData.cockcroft_gault_crcl).toFixed(1)} mL/min` : 'N/A'}, and allergy profile.</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Antibiogram Section - shown even when no AI recommendations */}
+                    {patientData?.antibiogram && (
+                      <div className="mt-6 border-t border-gray-200 pt-6">
+                        <h4 className="text-lg font-bold text-gray-900 mb-3">Antibiogram</h4>
+                        <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+                          <pre className="text-xs overflow-auto max-h-64 whitespace-pre-wrap font-mono">
+                            {patientData.antibiogram}
+                          </pre>
+                        </div>
                       </div>
                     )}
                   </div>

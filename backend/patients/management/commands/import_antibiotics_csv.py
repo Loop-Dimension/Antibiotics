@@ -112,7 +112,6 @@ class Command(BaseCommand):
                     condition=condition,
                     level=severity_level,
                     defaults={
-                        'description': f'Auto-imported severity: {severity_level}',
                         'severity_order': 1
                     }
                 )
