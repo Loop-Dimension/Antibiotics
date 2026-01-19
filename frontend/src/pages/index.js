@@ -5,3 +5,4 @@ export { default as ClinicalDashboard } from './ClinicalDashboard';
 export { default as PatientsList } from './PatientsList';
 export { default as AddPatient } from './AddPatient';
 export { default as EditPatient } from './EditPatient';
+export { default as PrescriptionAnalysis } from './PrescriptionAnalysis';

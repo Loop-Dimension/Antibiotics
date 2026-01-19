@@ -646,6 +646,160 @@ class PatientViewSet(viewsets.ModelViewSet):
                 'success': False
             }, status=500)
 
+    @permission_classes([AllowAny])
+    @action(detail=False, methods=['get'])
+    def prescription_analysis(self, request):
+        """
+        Analyze all patients comparing their actual prescriptions vs AI recommendations.
+        Returns match statistics and detailed comparison for each patient.
+        """
+        try:
+            patients = Patient.objects.all()
+            engine = AntibioticRecommendationEngine()
+            
+            analysis_results = []
+            total_patients = 0
+            exact_matches = 0
+            partial_matches = 0
+            no_matches = 0
+            no_recommendations = 0
+            
+            for patient in patients:
+                total_patients += 1
+                actual_prescription = patient.antibiotics or ""
+                
+                # Get AI recommendations
+                result = engine.get_recommendations(patient)
+                ai_recommendations = result.get('recommendations', [])
+                
+                # Extract antibiotic names from recommendations
+                recommended_antibiotics = []
+                for rec in ai_recommendations:
+                    antibiotic = rec.get('antibiotic', '')
+                    if antibiotic:
+                        recommended_antibiotics.append(antibiotic)
+                
+                # Normalize prescriptions for comparison
+                actual_normalized = self._normalize_antibiotic(actual_prescription)
+                
+                # Check match status
+                match_status = 'no_recommendation'
+                matched_recommendation = None
+                similarity_score = 0
+                
+                if recommended_antibiotics:
+                    for rec_antibiotic in recommended_antibiotics:
+                        rec_normalized = self._normalize_antibiotic(rec_antibiotic)
+                        score = self._calculate_similarity(actual_normalized, rec_normalized)
+                        
+                        if score > similarity_score:
+                            similarity_score = score
+                            matched_recommendation = rec_antibiotic
+                    
+                    if similarity_score >= 0.8:
+                        match_status = 'exact_match'
+                        exact_matches += 1
+                    elif similarity_score >= 0.4:
+                        match_status = 'partial_match'
+                        partial_matches += 1
+                    else:
+                        match_status = 'no_match'
+                        no_matches += 1
+                else:
+                    no_recommendations += 1
+                
+                analysis_results.append({
+                    'patient_id': patient.patient_id,
+                    'case_no': patient.case_no,
+                    'diagnosis': patient.diagnosis1,
+                    'crcl': float(patient.cockcroft_gault_crcl) if patient.cockcroft_gault_crcl else None,
+                    'pathogen': patient.pathogen,
+                    'actual_prescription': actual_prescription,
+                    'ai_recommendations': recommended_antibiotics[:5],  # Top 5
+                    'best_match': matched_recommendation,
+                    'similarity_score': round(similarity_score * 100, 1),
+                    'match_status': match_status
+                })
+            
+            # Calculate statistics
+            matched_count = exact_matches + partial_matches
+            match_rate = (matched_count / total_patients * 100) if total_patients > 0 else 0
+            
+            return Response({
+                'success': True,
+                'summary': {
+                    'total_patients': total_patients,
+                    'exact_matches': exact_matches,
+                    'partial_matches': partial_matches,
+                    'no_matches': no_matches,
+                    'no_recommendations': no_recommendations,
+                    'match_rate': round(match_rate, 1),
+                    'exact_match_rate': round((exact_matches / total_patients * 100) if total_patients > 0 else 0, 1),
+                },
+                'analysis': analysis_results
+            })
+            
+        except Exception as e:
+            logger.error(f"Error in prescription analysis: {str(e)}", exc_info=True)
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    def _normalize_antibiotic(self, antibiotic_str):
+        """Normalize antibiotic name for comparison"""
+        if not antibiotic_str:
+            return ""
+        
+        # Convert to lowercase and remove common prefixes
+        normalized = antibiotic_str.lower().strip()
+        normalized = normalized.replace('iv ', '').replace('po ', '').replace('oral ', '')
+        
+        # Extract just the antibiotic name (before dose)
+        import re
+        # Match antibiotic name (letters, /, -)
+        match = re.match(r'^([a-z/\-]+)', normalized)
+        if match:
+            return match.group(1)
+        return normalized
+    
+    def _calculate_similarity(self, str1, str2):
+        """Calculate similarity between two strings using various methods"""
+        if not str1 or not str2:
+            return 0
+        
+        # Exact match
+        if str1 == str2:
+            return 1.0
+        
+        # One contains the other
+        if str1 in str2 or str2 in str1:
+            return 0.9
+        
+        # Check for common antibiotic base name
+        common_bases = [
+            'ceftriaxone', 'cefepime', 'ceftazidime', 'cefotaxime', 'cefuroxime', 'cefpodoxime',
+            'piperacillin', 'tazobactam', 'amoxicillin', 'clavulanate',
+            'levofloxacin', 'ciprofloxacin', 'moxifloxacin',
+            'ertapenem', 'meropenem', 'imipenem',
+            'vancomycin', 'teicoplanin'
+        ]
+        
+        for base in common_bases:
+            if base in str1 and base in str2:
+                return 0.85
+        
+        # Levenshtein-like simple similarity
+        longer = str1 if len(str1) > len(str2) else str2
+        shorter = str2 if len(str1) > len(str2) else str1
+        
+        if len(longer) == 0:
+            return 1.0
+        
+        # Count matching characters
+        matches = sum(1 for c in shorter if c in longer)
+        return matches / len(longer)
+
 
 class CultureTestViewSet(viewsets.ModelViewSet):
     queryset = CultureTest.objects.all()

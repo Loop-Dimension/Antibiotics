@@ -297,6 +297,12 @@ const PatientsList = () => {
               )}
             </div>
             <button 
+              onClick={() => navigate('/analysis')}
+              className="bg-purple-600 text-white px-6 py-2 rounded-md font-medium hover:bg-purple-700"
+            >
+              📊 Analysis
+            </button>
+            <button 
               onClick={() => navigate('/')}
               className="bg-slate-800 text-white px-6 py-2 rounded-md font-medium hover:bg-slate-900"
             >

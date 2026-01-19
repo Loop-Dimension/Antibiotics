@@ -193,5 +193,10 @@ export const patientsAPI = {
     };
     const queryString = buildQueryParams(params);
     return api.get(`/api/patients/?${queryString}`);
+  },
+  
+  // Prescription Analysis - Compare actual prescriptions vs AI recommendations
+  getPrescriptionAnalysis: () => {
+    return api.get('/api/patients/prescription_analysis/');
   }
 };

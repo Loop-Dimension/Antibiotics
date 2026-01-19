@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts';
 import { ProtectedRoute } from './components';
-import { Login, Register, ClinicalDashboard, PatientsList, AddPatient, EditPatient } from './pages';
+import { Login, Register, ClinicalDashboard, PatientsList, AddPatient, EditPatient, PrescriptionAnalysis } from './pages';
 
 const App = () => {
   return (
@@ -48,6 +48,14 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <ClinicalDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/analysis" 
+            element={
+              <ProtectedRoute>
+                <PrescriptionAnalysis />
               </ProtectedRoute>
             } 
           />
