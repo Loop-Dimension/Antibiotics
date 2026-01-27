@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { patientsAPI } from '../api';
+import { AddPatientModal } from '../components';
 
 const PrescriptionAnalysis = () => {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ const PrescriptionAnalysis = () => {
   const [sortBy, setSortBy] = useState('case_no'); // case_no, similarity_score, diagnosis
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [showAddPatientModal, setShowAddPatientModal] = useState(false);
 
   useEffect(() => {
     fetchAnalysis();
@@ -54,7 +56,7 @@ const PrescriptionAnalysis = () => {
       case 'no_match':
         return 'No Match';
       case 'no_recommendation':
-        return 'No AI Recommendation';
+        return 'No Software Recommendation';
       default:
         return status;
     }
@@ -92,7 +94,7 @@ const PrescriptionAnalysis = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Analyzing prescriptions vs AI recommendations...</p>
+          <p className="mt-4 text-gray-600">Analyzing prescriptions vs software recommendations...</p>
         </div>
       </div>
     );
@@ -124,15 +126,23 @@ const PrescriptionAnalysis = () => {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Prescription Analysis</h1>
             <p className="text-gray-600">
-              Comparing actual prescriptions from CSV data vs AI-generated recommendations
+              Comparing actual prescriptions from CSV data vs software-generated recommendations
             </p>
           </div>
-          <button
-            onClick={() => navigate('/patients')}
-            className="bg-slate-800 text-white px-4 py-2 rounded-md hover:bg-slate-900"
-          >
-            ← Back to Patients
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowAddPatientModal(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center gap-2"
+            >
+              <span>+</span> Add Patient
+            </button>
+            <button
+              onClick={() => navigate('/patients')}
+              className="bg-slate-800 text-white px-4 py-2 rounded-md hover:bg-slate-900"
+            >
+              ← Back to Patients
+            </button>
+          </div>
         </div>
 
         {/* Summary Statistics */}
@@ -155,7 +165,7 @@ const PrescriptionAnalysis = () => {
           </div>
           <div className="bg-white rounded-lg shadow p-4 text-center border-l-4 border-gray-400">
             <div className="text-3xl font-bold text-gray-600">{summary.no_recommendations}</div>
-            <div className="text-sm text-gray-600">No AI Rec.</div>
+            <div className="text-sm text-gray-600">No Software Rec.</div>
           </div>
           <div className="bg-white rounded-lg shadow p-4 text-center border-l-4 border-blue-500">
             <div className="text-3xl font-bold text-blue-600">{summary.match_rate}%</div>
@@ -196,7 +206,7 @@ const PrescriptionAnalysis = () => {
             <span className="flex items-center"><span className="w-3 h-3 bg-green-500 rounded mr-1"></span> Exact Match</span>
             <span className="flex items-center"><span className="w-3 h-3 bg-yellow-500 rounded mr-1"></span> Partial Match</span>
             <span className="flex items-center"><span className="w-3 h-3 bg-red-500 rounded mr-1"></span> No Match</span>
-            <span className="flex items-center"><span className="w-3 h-3 bg-gray-400 rounded mr-1"></span> No AI Rec.</span>
+            <span className="flex items-center"><span className="w-3 h-3 bg-gray-400 rounded mr-1"></span> No Software Rec.</span>
           </div>
         </div>
 
@@ -213,7 +223,7 @@ const PrescriptionAnalysis = () => {
               <option value="exact_match">Exact Match ({summary.exact_matches})</option>
               <option value="partial_match">Partial Match ({summary.partial_matches})</option>
               <option value="no_match">No Match ({summary.no_matches})</option>
-              <option value="no_recommendation">No AI Recommendation ({summary.no_recommendations})</option>
+              <option value="no_recommendation">No Software Recommendation ({summary.no_recommendations})</option>
             </select>
           </div>
           <div>
@@ -247,7 +257,7 @@ const PrescriptionAnalysis = () => {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CrCl</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pathogen</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actual Prescription (CSV)</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AI Recommendations</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Software Recommendations</th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 </tr>
@@ -418,6 +428,16 @@ const PrescriptionAnalysis = () => {
           Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} filtered results ({summary.total_patients} total patients)
         </div>
       </div>
+
+      {/* Add Patient Modal */}
+      <AddPatientModal
+        isOpen={showAddPatientModal}
+        onClose={() => setShowAddPatientModal(false)}
+        onPatientAdded={() => {
+          setShowAddPatientModal(false);
+          fetchAnalysis(); // Refresh the analysis data
+        }}
+      />
     </div>
   );
 };

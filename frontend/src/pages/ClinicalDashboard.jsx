@@ -928,22 +928,10 @@ const ClinicalDashboard = () => {
                         <div className="text-sm text-gray-700 space-y-2">
                           <p><span className="font-semibold text-blue-700">Source:</span> IDSA Guidelines 2023; Korean Guidelines 2024</p>
                           <p>Recommended regimens based on local resistance rates <span className="text-blue-600">(last update: Aug 2025)</span>.</p>
-                          <p>AI engine risk-adjusted using patient comorbidities, CrCl {patientData?.cockcroft_gault_crcl ? `${parseFloat(patientData.cockcroft_gault_crcl).toFixed(1)} mL/min` : 'N/A'}, and allergy profile.</p>
+                          <p>Software risk-adjusted using patient comorbidities, CrCl {patientData?.cockcroft_gault_crcl ? `${parseFloat(patientData.cockcroft_gault_crcl).toFixed(1)} mL/min` : 'N/A'}, and allergy profile.</p>
                         </div>
                       </div>
                     </div>
-
-                    {/* Antibiogram Section */}
-                    {patientData.antibiogram && (
-                      <div className="mt-6 border-t border-gray-200 pt-6">
-                        <h4 className="text-lg font-bold text-gray-900 mb-3">Antibiogram</h4>
-                        <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
-                          <pre className="text-xs overflow-auto max-h-64 whitespace-pre-wrap font-mono">
-                            {patientData.antibiogram}
-                          </pre>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <div className="py-4">
@@ -976,20 +964,8 @@ const ClinicalDashboard = () => {
                           <div className="text-sm text-gray-700 space-y-2">
                             <p><span className="font-semibold text-blue-700">Source:</span> IDSA Guidelines 2023; Korean Guidelines 2024</p>
                             <p>Recommended regimens based on local resistance rates <span className="text-blue-600">(last update: Aug 2025)</span>.</p>
-                            <p>AI engine risk-adjusted using patient comorbidities, CrCl {patientData.cockcroft_gault_crcl ? `${parseFloat(patientData.cockcroft_gault_crcl).toFixed(1)} mL/min` : 'N/A'}, and allergy profile.</p>
+                            <p>Software risk-adjusted using patient comorbidities, CrCl {patientData.cockcroft_gault_crcl ? `${parseFloat(patientData.cockcroft_gault_crcl).toFixed(1)} mL/min` : 'N/A'}, and allergy profile.</p>
                           </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Antibiogram Section - shown even when no AI recommendations */}
-                    {patientData?.antibiogram && (
-                      <div className="mt-6 border-t border-gray-200 pt-6">
-                        <h4 className="text-lg font-bold text-gray-900 mb-3">Antibiogram</h4>
-                        <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
-                          <pre className="text-xs overflow-auto max-h-64 whitespace-pre-wrap font-mono">
-                            {patientData.antibiogram}
-                          </pre>
                         </div>
                       </div>
                     )}
