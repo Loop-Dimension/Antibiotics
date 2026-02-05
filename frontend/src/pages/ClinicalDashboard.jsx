@@ -435,7 +435,7 @@ const ClinicalDashboard = () => {
       </header>
 
       {/* Quick Stats Bar - Only show when not viewing specific patient */}
-      {!patientId && (
+      {/* {!patientId && (
         <div className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="grid grid-cols-4 gap-6">
             <div className="text-center">
@@ -456,7 +456,7 @@ const ClinicalDashboard = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Navigation Breadcrumb */}
       <div className="bg-gray-100 border-b border-gray-200 px-6 py-3">
