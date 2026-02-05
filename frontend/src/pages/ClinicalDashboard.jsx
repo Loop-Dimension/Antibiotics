@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { patientsAPI } from '../api';
-import { useAuth } from '../contexts/AuthContext';
-import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { patientsAPI } from "../api";
+import { useAuth } from "../contexts/AuthContext";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 
 const ClinicalDashboard = () => {
   const { patientId } = useParams();
@@ -10,27 +10,27 @@ const ClinicalDashboard = () => {
   const [patientData, setPatientData] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
   const [recommendationData, setRecommendationData] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [loading, setLoading] = useState(true);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [editingDiagnosis2, setEditingDiagnosis2] = useState(false);
-  const [diagnosis2Value, setDiagnosis2Value] = useState('');
+  const [diagnosis2Value, setDiagnosis2Value] = useState("");
   const [editingDiagnosis1, setEditingDiagnosis1] = useState(false);
-  const [diagnosis1Value, setDiagnosis1Value] = useState('');
+  const [diagnosis1Value, setDiagnosis1Value] = useState("");
   const [editingRecommendations, setEditingRecommendations] = useState({});
   const [selectedRecommendation, setSelectedRecommendation] = useState(null);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [manualEntry, setManualEntry] = useState({
-    antibiotic_name: '',
-    dose: '',
-    interval: '',
-    duration: '',
-    route: '',
-    isManual: true
+    antibiotic_name: "",
+    dose: "",
+    interval: "",
+    duration: "",
+    route: "",
+    isManual: true,
   });
   const { user, logout } = useAuth();
   const searchTimeoutRef = useRef(null);
@@ -48,7 +48,7 @@ const ClinicalDashboard = () => {
     if (showSuccessModal) {
       const timer = setTimeout(() => {
         setShowSuccessModal(false);
-        navigate('/');
+        navigate("/");
       }, 3000); // Auto-redirect after 3 seconds
 
       return () => clearTimeout(timer);
@@ -61,19 +61,19 @@ const ClinicalDashboard = () => {
     try {
       const response = await patientsAPI.getPatient(id);
       setPatientData(response.data);
-      setDiagnosis2Value(response.data.diagnosis2 || '');
-      setDiagnosis1Value(response.data.diagnosis1 || '');
-      
+      setDiagnosis2Value(response.data.diagnosis2 || "");
+      setDiagnosis1Value(response.data.diagnosis1 || "");
+
       // Fetch recommended regimen
       fetchAIRecommendations(id);
-      
+
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching specific patient:', error);
+      console.error("Error fetching specific patient:", error);
       if (error.response?.status === 404) {
         setError(`Patient with ID ${id} not found`);
       } else {
-        setError('Error loading patient data');
+        setError("Error loading patient data");
       }
       setLoading(false);
     }
@@ -84,22 +84,22 @@ const ClinicalDashboard = () => {
     try {
       const response = await patientsAPI.getClinicalRecommendations(id);
       const data = response.data;
-      
+
       if (data.success && data.recommendations) {
         setRecommendations(data.recommendations);
         setRecommendationData(data); // Store full response for analysis display
       } else {
-        console.warn('No recommendations returned:', data.error || data.details);
+        console.warn("No recommendations returned:", data.error || data.details);
         setRecommendations([]);
         setRecommendationData(data);
       }
     } catch (error) {
-      console.error('Error fetching clinical recommendations:', error);
+      console.error("Error fetching clinical recommendations:", error);
       setRecommendations([]);
       setRecommendationData({
         success: false,
-        error: 'Failed to fetch recommendations',
-        details: error.response?.data?.details || error.message
+        error: "Failed to fetch recommendations",
+        details: error.response?.data?.details || error.message,
       });
     }
     setRecommendationsLoading(false);
@@ -114,20 +114,20 @@ const ClinicalDashboard = () => {
       }
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching patient data:', error);
+      console.error("Error fetching patient data:", error);
       // Use mock data if API fails
       const mockData = {
         patient_id: 1,
-        name: 'Kim',
+        name: "Kim",
         age: 65,
-        gender: 'M',
+        gender: "M",
         body_temperature: 38.3,
         wbc: 14200,
         crp: 92,
         cockcroft_gault_crcl: 50,
-        pathogen: 'Escherichia coli',
-        sample_type: 'urine',
-        allergies: 'Penicillin'
+        pathogen: "Escherichia coli",
+        sample_type: "urine",
+        allergies: "Penicillin",
       };
       setPatientData(mockData);
       setLoading(false);
@@ -160,14 +160,14 @@ const ClinicalDashboard = () => {
       setSearchResults(response.data);
       setShowSearchResults(true);
     } catch (error) {
-      console.error('Error searching patients:', error);
+      console.error("Error searching patients:", error);
       setSearchResults([]);
       setShowSearchResults(false);
     }
   };
 
   const selectPatient = (patient) => {
-    setSearchTerm('');
+    setSearchTerm("");
     setSearchResults([]);
     setShowSearchResults(false);
     // Navigate to specific patient URL
@@ -190,18 +190,18 @@ const ClinicalDashboard = () => {
   const handleLogout = async () => {
     await logout();
   };
-      
+
   const goToHomeDashboard = () => {
-    navigate('/');
+    navigate("/");
   };
 
   const sendOrdersToEMR = () => {
     // Check if a recommendation is selected
     if (selectedRecommendation === null) {
-      alert('Please select a recommendation before sending orders to EMR.');
+      alert("Please select a recommendation before sending orders to EMR.");
       return;
     }
-    
+
     // Show success modal
     setShowSuccessModal(true);
   };
@@ -218,29 +218,29 @@ const ClinicalDashboard = () => {
     try {
       const updatedData = {
         ...patientData,
-        diagnosis1: diagnosis1Value
+        diagnosis1: diagnosis1Value,
       };
-      
+
       await patientsAPI.updatePatient(patientId, updatedData);
-      
+
       // Update local state
-      setPatientData(prev => ({
+      setPatientData((prev) => ({
         ...prev,
-        diagnosis1: diagnosis1Value
+        diagnosis1: diagnosis1Value,
       }));
-      
+
       setEditingDiagnosis1(false);
-      
+
       // Refresh recommendations after diagnosis change
       fetchAIRecommendations(patientId);
     } catch (error) {
-      console.error('Error updating diagnosis1:', error);
-      alert('Failed to update diagnosis. Please try again.');
+      console.error("Error updating diagnosis1:", error);
+      alert("Failed to update diagnosis. Please try again.");
     }
   };
 
   const handleCancelDiagnosis1Edit = () => {
-    setDiagnosis1Value(patientData.diagnosis1 || '');
+    setDiagnosis1Value(patientData.diagnosis1 || "");
     setEditingDiagnosis1(false);
   };
 
@@ -248,26 +248,26 @@ const ClinicalDashboard = () => {
     try {
       const updatedData = {
         ...patientData,
-        diagnosis2: diagnosis2Value
+        diagnosis2: diagnosis2Value,
       };
-      
+
       await patientsAPI.updatePatient(patientId, updatedData);
-      
+
       // Update local state
-      setPatientData(prev => ({
+      setPatientData((prev) => ({
         ...prev,
-        diagnosis2: diagnosis2Value
+        diagnosis2: diagnosis2Value,
       }));
-      
+
       setEditingDiagnosis2(false);
     } catch (error) {
-      console.error('Error updating diagnosis2:', error);
-      alert('Failed to update diagnosis. Please try again.');
+      console.error("Error updating diagnosis2:", error);
+      alert("Failed to update diagnosis. Please try again.");
     }
   };
 
   const handleCancelEdit = () => {
-    setDiagnosis2Value(patientData.diagnosis2 || '');
+    setDiagnosis2Value(patientData.diagnosis2 || "");
     setEditingDiagnosis2(false);
   };
 
@@ -280,11 +280,11 @@ const ClinicalDashboard = () => {
   };
 
   const handleEditRecommendation = (index, field, value) => {
-    setRecommendations(prev => {
+    setRecommendations((prev) => {
       const updated = [...prev];
       updated[index] = {
         ...updated[index],
-        [field]: value
+        [field]: value,
       };
       return updated;
     });
@@ -293,22 +293,22 @@ const ClinicalDashboard = () => {
   const handleSaveSelectedRecommendations = async () => {
     try {
       if (selectedRecommendation === null) {
-        alert('Please select a recommendation to save.');
+        alert("Please select a recommendation to save.");
         return;
       }
-      
+
       const selectedRec = recommendations[selectedRecommendation];
-      
+
       const response = await patientsAPI.saveRecommendations(patientId, [selectedRec]);
-      
+
       if (response.data.success) {
-        alert('Recommendation saved successfully!');
+        alert("Recommendation saved successfully!");
         // Optionally clear selection after saving
         setSelectedRecommendation(null);
       }
     } catch (error) {
-      console.error('Error saving recommendation:', error);
-      alert('Failed to save recommendation. Please try again.');
+      console.error("Error saving recommendation:", error);
+      alert("Failed to save recommendation. Please try again.");
     }
   };
 
@@ -319,18 +319,18 @@ const ClinicalDashboard = () => {
   const handleCancelManualEntry = () => {
     setShowManualEntry(false);
     setManualEntry({
-      antibiotic_name: '',
-      dose: '',
-      interval: '',
-      duration: '',
-      route: '',
-      isManual: true
+      antibiotic_name: "",
+      dose: "",
+      interval: "",
+      duration: "",
+      route: "",
+      isManual: true,
     });
   };
 
   const handleSaveManualEntry = () => {
     if (!manualEntry.antibiotic_name.trim()) {
-      alert('Please enter an antibiotic name.');
+      alert("Please enter an antibiotic name.");
       return;
     }
 
@@ -338,23 +338,23 @@ const ClinicalDashboard = () => {
     const newRecommendation = {
       ...manualEntry,
       antibiotic: manualEntry.antibiotic_name,
-      isManual: true
+      isManual: true,
     };
 
-    setRecommendations(prev => [...prev, newRecommendation]);
+    setRecommendations((prev) => [...prev, newRecommendation]);
     handleCancelManualEntry();
   };
 
   const handleManualEntryChange = (field, value) => {
-    setManualEntry(prev => ({
+    setManualEntry((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleDeleteRecommendation = (index) => {
-    if (window.confirm('Are you sure you want to delete this recommendation?')) {
-      setRecommendations(prev => prev.filter((_, i) => i !== index));
+    if (window.confirm("Are you sure you want to delete this recommendation?")) {
+      setRecommendations((prev) => prev.filter((_, i) => i !== index));
       // Update selected recommendation
       if (selectedRecommendation === index) {
         setSelectedRecommendation(null);
@@ -370,7 +370,7 @@ const ClinicalDashboard = () => {
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 
+            <h1
               onClick={goToHomeDashboard}
               className="text-2xl font-bold text-gray-900 cursor-pointer hover:text-blue-600"
             >
@@ -388,7 +388,7 @@ const ClinicalDashboard = () => {
                 onBlur={handleSearchBlur}
                 className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-80"
               />
-              
+
               {/* Search Results Dropdown */}
               {showSearchResults && searchResults.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
@@ -399,16 +399,18 @@ const ClinicalDashboard = () => {
                       className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
                     >
                       <div className="font-medium text-gray-900">
-                        {patient.name}, {patient.age} {patient.gender === 'Male' || patient.gender === 'M' ? '♂' : '♀'}
+                        {patient.name}, {patient.age}{" "}
+                        {patient.gender === "Male" || patient.gender === "M" ? "♂" : "♀"}
                       </div>
                       <div className="text-sm text-gray-600">
-                        ID: {patient.patient_id} | {patient.diagnosis1 || 'No diagnosis'} | CrCl: {Math.round(patient.cockcroft_gault_crcl || 0)} mL/min
+                        ID: {patient.patient_id} | {patient.diagnosis1 || "No diagnosis"} | CrCl:{" "}
+                        {Math.round(patient.cockcroft_gault_crcl || 0)} mL/min
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-              
+
               {/* No results message */}
               {showSearchResults && searchResults.length === 0 && searchTerm.length >= 2 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-50 px-4 py-2 text-gray-500">
@@ -416,13 +418,13 @@ const ClinicalDashboard = () => {
                 </div>
               )}
             </div>
-            <button 
+            <button
               onClick={goToHomeDashboard}
               className="bg-slate-800 text-white px-6 py-2 rounded-md font-medium hover:bg-slate-900"
             >
               Open EMR
             </button>
-            <button 
+            <button
               onClick={handleLogout}
               className="bg-red-600 text-white px-4 py-2 rounded-md font-medium hover:bg-red-700"
             >
@@ -459,25 +461,17 @@ const ClinicalDashboard = () => {
       {/* Navigation Breadcrumb */}
       <div className="bg-gray-100 border-b border-gray-200 px-6 py-3">
         <div className="flex items-center space-x-2 text-sm text-gray-600">
-          <button 
-            onClick={() => navigate('/')}
-            className="hover:text-blue-600"
-          >
+          <button onClick={() => navigate("/")} className="hover:text-blue-600">
             Dashboard
           </button>
           {patientId && (
             <>
               <span>›</span>
-              <button 
-                onClick={() => navigate('/patients')}
-                className="hover:text-blue-600"
-              >
+              <button onClick={() => navigate("/patients")} className="hover:text-blue-600">
                 Patients
               </button>
               <span>›</span>
-              <span className="text-gray-900 font-medium">
-                {patientData?.name || `Patient ${patientId}`}
-              </span>
+              <span className="text-gray-900 font-medium">{patientData?.name || `Patient ${patientId}`}</span>
             </>
           )}
         </div>
@@ -499,31 +493,35 @@ const ClinicalDashboard = () => {
                   </span>
                 </div>
               </div>
-              
+
               <div className="space-y-3">
                 <div>
                   <label className="text-xs font-medium text-gray-500">Name:</label>
                   <div className="text-sm font-semibold text-gray-900">
-                    {patientData.name}, {patientData.age} {patientData.gender === 'Male' || patientData.gender === 'M' ? '♂' : '♀'}
+                    {patientData.name}, {patientData.age}{" "}
+                    {patientData.gender === "Male" || patientData.gender === "M" ? "♂" : "♀"}
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="text-xs font-medium text-gray-500">Allergies:</label>
-                  <div className={`text-sm ${patientData.allergies && patientData.allergies !== 'None' ? 'text-red-600 font-medium' : 'text-gray-700'}`}>
-                    {patientData.allergies || 'None'}
+                  <div
+                    className={`text-sm ${patientData.allergies && patientData.allergies !== "None" ? "text-red-600 font-medium" : "text-gray-700"}`}
+                  >
+                    {patientData.allergies || "None"}
                   </div>
                 </div>
                 <div>
                   <label className="text-xs font-medium text-gray-500">CrCl:</label>
                   <div className="text-sm text-gray-700">
-                    {patientData.cockcroft_gault_crcl ? parseFloat(patientData.cockcroft_gault_crcl).toFixed(1) : 'N/A'} mL/min
+                    {patientData.cockcroft_gault_crcl ? parseFloat(patientData.cockcroft_gault_crcl).toFixed(1) : "N/A"}{" "}
+                    mL/min
                   </div>
                 </div>
                 <div>
                   <label className="text-xs font-medium text-gray-500">Current Antibiotic:</label>
                   <div className="text-sm text-gray-700">
-                    {patientData.antibiotics && patientData.antibiotics !== 'None' ? patientData.antibiotics : 'None'}
+                    {patientData.antibiotics && patientData.antibiotics !== "None" ? patientData.antibiotics : "None"}
                   </div>
                 </div>
 
@@ -587,7 +585,7 @@ const ClinicalDashboard = () => {
                   </button>
                 )}
               </div>
-              
+
               {editingDiagnosis2 ? (
                 <div className="space-y-3">
                   <input
@@ -615,9 +613,7 @@ const ClinicalDashboard = () => {
                 </div>
               ) : (
                 <div className="text-sm font-semibold text-gray-900">
-                  {patientData.diagnosis2 || (
-                    <span className="text-gray-400 italic">No second diagnosis</span>
-                  )}
+                  {patientData.diagnosis2 || <span className="text-gray-400 italic">No second diagnosis</span>}
                 </div>
               )}
             </div>
@@ -628,21 +624,27 @@ const ClinicalDashboard = () => {
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Temp</span>
-                  <span className={`text-sm font-semibold ${patientData.body_temperature && parseFloat(patientData.body_temperature) > 38 ? 'text-red-600' : 'text-gray-900'}`}>
-                    {patientData.body_temperature ? `${patientData.body_temperature}°C` : 'N/A'}
+                  <span
+                    className={`text-sm font-semibold ${patientData.body_temperature && parseFloat(patientData.body_temperature) > 38 ? "text-red-600" : "text-gray-900"}`}
+                  >
+                    {patientData.body_temperature ? `${patientData.body_temperature}°C` : "N/A"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">WBC</span>
-                  <span className={`text-sm font-semibold ${patientData.wbc && (parseFloat(patientData.wbc) > 11000 || parseFloat(patientData.wbc) < 4000) ? 'text-red-600' : 'text-gray-900'}`}>
-                    {patientData.wbc ? `${(parseFloat(patientData.wbc) / 1000).toFixed(1)}k` : 'N/A'}
+                  <span
+                    className={`text-sm font-semibold ${patientData.wbc && (parseFloat(patientData.wbc) > 11000 || parseFloat(patientData.wbc) < 4000) ? "text-red-600" : "text-gray-900"}`}
+                  >
+                    {patientData.wbc ? `${(parseFloat(patientData.wbc) / 1000).toFixed(1)}k` : "N/A"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">CRP</span>
                   <div className="flex items-center">
-                    <span className={`text-sm font-semibold mr-2 ${patientData.crp && parseFloat(patientData.crp) > 10 ? 'text-red-600' : 'text-gray-900'}`}>
-                      {patientData.crp ? `${parseFloat(patientData.crp).toFixed(0)} mg/L` : 'N/A'}
+                    <span
+                      className={`text-sm font-semibold mr-2 ${patientData.crp && parseFloat(patientData.crp) > 10 ? "text-red-600" : "text-gray-900"}`}
+                    >
+                      {patientData.crp ? `${parseFloat(patientData.crp).toFixed(0)} mg/L` : "N/A"}
                     </span>
                     {patientData.crp && parseFloat(patientData.crp) > 10 && (
                       <div className="w-2 h-2 bg-red-500 rounded-full"></div>
@@ -655,7 +657,7 @@ const ClinicalDashboard = () => {
             {/* Micro Results Card */}
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Micro Results</h3>
-              {patientData.pathogen && patientData.pathogen !== 'Unknown' ? (
+              {patientData.pathogen && patientData.pathogen !== "Unknown" ? (
                 <div className="space-y-2">
                   <div className="text-sm">
                     <span className="font-medium">Pathogen:</span> {patientData.pathogen}
@@ -678,7 +680,7 @@ const ClinicalDashboard = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold text-gray-900">Recommended Regimen</h3>
                 <div className="flex space-x-2">
-                  <button 
+                  <button
                     onClick={() => fetchAIRecommendations(patientId)}
                     className="px-3 py-1 bg-blue-100 text-blue-800 rounded-md text-sm font-medium hover:bg-blue-200"
                   >
@@ -686,14 +688,16 @@ const ClinicalDashboard = () => {
                   </button>
                 </div>
               </div>
-              
+
               {/* Allergy Warning */}
-              {patientData.allergies && patientData.allergies !== 'None' && (
+              {patientData.allergies && patientData.allergies !== "None" && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4 flex items-start">
                   <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400 mr-3 mt-0.5 flex-shrink-0" />
                   <div className="text-sm">
                     <div className="font-medium text-yellow-800">Allergy Conflict</div>
-                    <div className="text-yellow-700">Patient is allergic to {patientData.allergies}. Avoid β-lactams; consider alternatives below.</div>
+                    <div className="text-yellow-700">
+                      Patient is allergic to {patientData.allergies}. Avoid β-lactams; consider alternatives below.
+                    </div>
                   </div>
                 </div>
               )}
@@ -703,10 +707,7 @@ const ClinicalDashboard = () => {
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-medium text-blue-900">Add Manual Recommendation</h4>
-                    <button 
-                      onClick={handleCancelManualEntry}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
+                    <button onClick={handleCancelManualEntry} className="text-blue-600 hover:text-blue-800 text-sm">
                       ✕ Cancel
                     </button>
                   </div>
@@ -716,7 +717,7 @@ const ClinicalDashboard = () => {
                       <input
                         type="text"
                         value={manualEntry.antibiotic_name}
-                        onChange={(e) => handleManualEntryChange('antibiotic_name', e.target.value)}
+                        onChange={(e) => handleManualEntryChange("antibiotic_name", e.target.value)}
                         placeholder="e.g., Not Recommended"
                         className="w-full px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                       />
@@ -726,7 +727,7 @@ const ClinicalDashboard = () => {
                       <input
                         type="text"
                         value={manualEntry.dose}
-                        onChange={(e) => handleManualEntryChange('dose', e.target.value)}
+                        onChange={(e) => handleManualEntryChange("dose", e.target.value)}
                         placeholder="N/A or dose"
                         className="w-full px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                       />
@@ -736,7 +737,7 @@ const ClinicalDashboard = () => {
                       <input
                         type="text"
                         value={manualEntry.interval}
-                        onChange={(e) => handleManualEntryChange('interval', e.target.value)}
+                        onChange={(e) => handleManualEntryChange("interval", e.target.value)}
                         placeholder="N/A or interval"
                         className="w-full px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                       />
@@ -746,7 +747,7 @@ const ClinicalDashboard = () => {
                       <input
                         type="text"
                         value={manualEntry.duration}
-                        onChange={(e) => handleManualEntryChange('duration', e.target.value)}
+                        onChange={(e) => handleManualEntryChange("duration", e.target.value)}
                         placeholder="N/A or duration"
                         className="w-full px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                       />
@@ -756,14 +757,14 @@ const ClinicalDashboard = () => {
                       <input
                         type="text"
                         value={manualEntry.route}
-                        onChange={(e) => handleManualEntryChange('route', e.target.value)}
+                        onChange={(e) => handleManualEntryChange("route", e.target.value)}
                         placeholder="N/A or route"
                         className="w-full px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                       />
                     </div>
                   </div>
                   <div className="flex justify-end">
-                    <button 
+                    <button
                       onClick={handleSaveManualEntry}
                       className="bg-blue-600 text-white px-4 py-1 rounded text-sm font-medium hover:bg-blue-700"
                     >
@@ -785,16 +786,29 @@ const ClinicalDashboard = () => {
                     <table className="min-w-full">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Select</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Antibiotic</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dose</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Interval</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Select
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Antibiotic
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Dose
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Interval
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Duration
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {recommendations.map((rec, index) => (
-                          <tr key={index} className={`hover:bg-gray-50 ${rec.isManual ? 'bg-blue-25 border-l-4 border-l-blue-400' : ''}`}>
+                          <tr
+                            key={index}
+                            className={`hover:bg-gray-50 ${rec.isManual ? "bg-blue-25 border-l-4 border-l-blue-400" : ""}`}
+                          >
                             <td className="px-4 py-4 whitespace-nowrap">
                               <input
                                 type="radio"
@@ -807,8 +821,12 @@ const ClinicalDashboard = () => {
                             <td className="px-4 py-4 whitespace-nowrap">
                               <div className="flex items-center space-x-2">
                                 <div>
-                                  <div className="text-sm font-medium text-gray-900">{rec.antibiotic_name || rec.antibiotic}</div>
-                                  <div className="text-xs text-gray-500">{rec.route || rec.routes_array?.join(', ') || 'Not specified'}</div>
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {rec.antibiotic_name || rec.antibiotic}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {rec.route || rec.routes_array?.join(", ") || "Not specified"}
+                                  </div>
                                 </div>
                                 {rec.isManual && (
                                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
@@ -820,16 +838,16 @@ const ClinicalDashboard = () => {
                             <td className="px-4 py-4 whitespace-nowrap">
                               <input
                                 type="text"
-                                value={rec.dose || 'See guidelines'}
-                                onChange={(e) => handleEditRecommendation(index, 'dose', e.target.value)}
+                                value={rec.dose || "See guidelines"}
+                                onChange={(e) => handleEditRecommendation(index, "dose", e.target.value)}
                                 className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                               />
                             </td>
                             <td className="px-4 py-4 whitespace-nowrap">
                               <input
                                 type="text"
-                                value={rec.interval || ''}
-                                onChange={(e) => handleEditRecommendation(index, 'interval', e.target.value)}
+                                value={rec.interval || ""}
+                                onChange={(e) => handleEditRecommendation(index, "interval", e.target.value)}
                                 placeholder="e.g., q12h"
                                 className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                               />
@@ -837,8 +855,8 @@ const ClinicalDashboard = () => {
                             <td className="px-4 py-4 whitespace-nowrap">
                               <input
                                 type="text"
-                                value={rec.duration || 'Per guidelines'}
-                                onChange={(e) => handleEditRecommendation(index, 'duration', e.target.value)}
+                                value={rec.duration || "Per guidelines"}
+                                onChange={(e) => handleEditRecommendation(index, "duration", e.target.value)}
                                 className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                               />
                             </td>
@@ -850,12 +868,12 @@ const ClinicalDashboard = () => {
                             <input
                               type="radio"
                               name="recommendation"
-                              checked={selectedRecommendation === 'manual'}
+                              checked={selectedRecommendation === "manual"}
                               onChange={() => {
-                                if (selectedRecommendation === 'manual') {
+                                if (selectedRecommendation === "manual") {
                                   setSelectedRecommendation(null);
                                 } else {
-                                  setSelectedRecommendation('manual');
+                                  setSelectedRecommendation("manual");
                                 }
                               }}
                               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
@@ -867,11 +885,10 @@ const ClinicalDashboard = () => {
                                 <input
                                   type="text"
                                   value={manualEntry.antibiotic_name}
-                                  onChange={(e) => handleManualEntryChange('antibiotic_name', e.target.value)}
+                                  onChange={(e) => handleManualEntryChange("antibiotic_name", e.target.value)}
                                   placeholder="Enter antibiotic name..."
                                   className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
                                 />
-                               
                               </div>
                               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                                 Manual
@@ -882,7 +899,7 @@ const ClinicalDashboard = () => {
                             <input
                               type="text"
                               value={manualEntry.dose}
-                              onChange={(e) => handleManualEntryChange('dose', e.target.value)}
+                              onChange={(e) => handleManualEntryChange("dose", e.target.value)}
                               placeholder="Dose"
                               className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
                             />
@@ -891,7 +908,7 @@ const ClinicalDashboard = () => {
                             <input
                               type="text"
                               value={manualEntry.interval}
-                              onChange={(e) => handleManualEntryChange('interval', e.target.value)}
+                              onChange={(e) => handleManualEntryChange("interval", e.target.value)}
                               placeholder="e.g., q12h"
                               className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
                             />
@@ -900,7 +917,7 @@ const ClinicalDashboard = () => {
                             <input
                               type="text"
                               value={manualEntry.duration}
-                              onChange={(e) => handleManualEntryChange('duration', e.target.value)}
+                              onChange={(e) => handleManualEntryChange("duration", e.target.value)}
                               placeholder="Duration"
                               className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500"
                             />
@@ -908,11 +925,11 @@ const ClinicalDashboard = () => {
                         </tr>
                       </tbody>
                     </table>
-                    
+
                     {/* Action Buttons */}
                     <div className="mt-6 flex justify-end items-center">
                       <div className="flex space-x-3">
-                        <button 
+                        <button
                           onClick={sendOrdersToEMR}
                           className="bg-slate-800 text-white px-6 py-2 rounded-md font-medium hover:bg-slate-900 transition-colors"
                         >
@@ -926,9 +943,21 @@ const ClinicalDashboard = () => {
                       <h4 className="text-lg font-bold text-gray-900 mb-3">Guideline Justification</h4>
                       <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
                         <div className="text-sm text-gray-700 space-y-2">
-                          <p><span className="font-semibold text-blue-700">Source:</span> IDSA Guidelines 2023; Korean Guidelines 2024</p>
-                          <p>Recommended regimens based on local resistance rates <span className="text-blue-600">(last update: Aug 2025)</span>.</p>
-                          <p>Software risk-adjusted using patient comorbidities, CrCl {patientData?.cockcroft_gault_crcl ? `${parseFloat(patientData.cockcroft_gault_crcl).toFixed(1)} mL/min` : 'N/A'}, and allergy profile.</p>
+                          <p>
+                            <span className="font-semibold text-blue-700">Source:</span> IDSA Guidelines 2023; Korean
+                            Guidelines 2024
+                          </p>
+                          <p>
+                            Recommended regimens based on local resistance rates{" "}
+                            <span className="text-blue-600">(last update: Aug 2025)</span>.
+                          </p>
+                          <p>
+                            Software risk-adjusted using patient comorbidities, CrCl{" "}
+                            {patientData?.cockcroft_gault_crcl
+                              ? `${parseFloat(patientData.cockcroft_gault_crcl).toFixed(1)} mL/min`
+                              : "N/A"}
+                            , and allergy profile.
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -939,7 +968,8 @@ const ClinicalDashboard = () => {
                       <div className="text-center">
                         <div className="text-amber-600 font-medium">Limited Recommendations Available</div>
                         <div className="text-sm text-gray-600 mt-2 max-w-md mx-auto">
-                          {recommendationData.message || "Showing general empirical therapy options. Consider pathogen-specific therapy when culture results are available."}
+                          {recommendationData.message ||
+                            "Showing general empirical therapy options. Consider pathogen-specific therapy when culture results are available."}
                         </div>
                       </div>
                     ) : recommendationData?.success === false ? (
@@ -952,7 +982,9 @@ const ClinicalDashboard = () => {
                     ) : (
                       <div className="text-center">
                         <div className="text-gray-600 font-medium">Select a patient to view recommendations</div>
-                        <div className="text-sm text-gray-500 mt-2">Click "Get Recommendations" to load clinical guidance.</div>
+                        <div className="text-sm text-gray-500 mt-2">
+                          Click "Get Recommendations" to load clinical guidance.
+                        </div>
                       </div>
                     )}
 
@@ -962,9 +994,21 @@ const ClinicalDashboard = () => {
                         <h4 className="text-lg font-bold text-gray-900 mb-3">Guideline Justification</h4>
                         <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
                           <div className="text-sm text-gray-700 space-y-2">
-                            <p><span className="font-semibold text-blue-700">Source:</span> IDSA Guidelines 2023; Korean Guidelines 2024</p>
-                            <p>Recommended regimens based on local resistance rates <span className="text-blue-600">(last update: Aug 2025)</span>.</p>
-                            <p>Software risk-adjusted using patient comorbidities, CrCl {patientData.cockcroft_gault_crcl ? `${parseFloat(patientData.cockcroft_gault_crcl).toFixed(1)} mL/min` : 'N/A'}, and allergy profile.</p>
+                            <p>
+                              <span className="font-semibold text-blue-700">Source:</span> IDSA Guidelines 2023; Korean
+                              Guidelines 2024
+                            </p>
+                            <p>
+                              Recommended regimens based on local resistance rates{" "}
+                              <span className="text-blue-600">(last update: Aug 2025)</span>.
+                            </p>
+                            <p>
+                              Software risk-adjusted using patient comorbidities, CrCl{" "}
+                              {patientData.cockcroft_gault_crcl
+                                ? `${parseFloat(patientData.cockcroft_gault_crcl).toFixed(1)} mL/min`
+                                : "N/A"}
+                              , and allergy profile.
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -981,19 +1025,26 @@ const ClinicalDashboard = () => {
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Clinical Decision Support System</h2>
-              <p className="text-gray-600">Evidence-based antibiotic recommendations tailored to patient clinical data.</p>
+              <p className="text-gray-600">
+                Evidence-based antibiotic recommendations tailored to patient clinical data.
+              </p>
             </div>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div 
-                onClick={() => navigate('/add-patient')}
+            <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+              <div
+                onClick={() => navigate("/add-patient")}
                 className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md cursor-pointer transition-shadow"
               >
                 <div className="flex items-center">
                   <div className="bg-emerald-100 p-3 rounded-lg">
                     <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
                     </svg>
                   </div>
                   <div className="ml-4">
@@ -1003,14 +1054,19 @@ const ClinicalDashboard = () => {
                 </div>
               </div>
 
-              <div 
-                onClick={() => navigate('/patients')}
+              <div
+                onClick={() => navigate("/patients")}
                 className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md cursor-pointer transition-shadow"
               >
                 <div className="flex items-center">
                   <div className="bg-blue-100 p-3 rounded-lg">
                     <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                      />
                     </svg>
                   </div>
                   <div className="ml-4">
@@ -1020,11 +1076,40 @@ const ClinicalDashboard = () => {
                 </div>
               </div>
 
-              <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+              <div
+                onClick={() => navigate("/analysis")}
+                className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md cursor-pointer transition-shadow"
+              >
                 <div className="flex items-center">
                   <div className="bg-purple-100 p-3 rounded-lg">
-                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    <svg
+                      className="w-6 h-6 text-purple-600"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" />
+                    </svg>
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Analysis</h3>
+                    <p className="text-sm text-gray-600">Browse prescription analysis</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+                <div className="flex items-center">
+                  <div className="bg-yellow-100 p-3 rounded-lg">
+                    <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                      />
                     </svg>
                   </div>
                   <div className="ml-4">
@@ -1057,13 +1142,18 @@ const ClinicalDashboard = () => {
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">Orders Sent Successfully!</h3>
             </div>
-            
+
             {/* Modal Body */}
             <div className="px-6 py-4">
               <div className="flex items-center mb-4">
                 <div className="flex-shrink-0">
                   <svg className="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                 </div>
                 <div className="ml-4">
@@ -1072,45 +1162,68 @@ const ClinicalDashboard = () => {
                   </p>
                 </div>
               </div>
-              
+
               {/* Show selected recommendation details */}
-              {selectedRecommendation !== null && selectedRecommendation !== 'manual' && recommendations[selectedRecommendation] && (
-                <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
-                  <h4 className="font-medium text-blue-900 mb-2">Sent Recommendation:</h4>
-                  <div className="text-sm text-blue-800">
-                    <p><span className="font-medium">Antibiotic:</span> {recommendations[selectedRecommendation].antibiotic_name || recommendations[selectedRecommendation].antibiotic}</p>
-                    <p><span className="font-medium">Dose:</span> {recommendations[selectedRecommendation].dose || 'See guidelines'}</p>
-                    <p><span className="font-medium">Interval:</span> {recommendations[selectedRecommendation].interval || 'Not specified'}</p>
-                    <p><span className="font-medium">Duration:</span> {recommendations[selectedRecommendation].duration || 'Per guidelines'}</p>
+              {selectedRecommendation !== null &&
+                selectedRecommendation !== "manual" &&
+                recommendations[selectedRecommendation] && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+                    <h4 className="font-medium text-blue-900 mb-2">Sent Recommendation:</h4>
+                    <div className="text-sm text-blue-800">
+                      <p>
+                        <span className="font-medium">Antibiotic:</span>{" "}
+                        {recommendations[selectedRecommendation].antibiotic_name ||
+                          recommendations[selectedRecommendation].antibiotic}
+                      </p>
+                      <p>
+                        <span className="font-medium">Dose:</span>{" "}
+                        {recommendations[selectedRecommendation].dose || "See guidelines"}
+                      </p>
+                      <p>
+                        <span className="font-medium">Interval:</span>{" "}
+                        {recommendations[selectedRecommendation].interval || "Not specified"}
+                      </p>
+                      <p>
+                        <span className="font-medium">Duration:</span>{" "}
+                        {recommendations[selectedRecommendation].duration || "Per guidelines"}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
-              
+                )}
+
               {/* Manual entry details */}
-              {selectedRecommendation === 'manual' && manualEntry.antibiotic_name && (
+              {selectedRecommendation === "manual" && manualEntry.antibiotic_name && (
                 <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4">
                   <h4 className="font-medium text-green-900 mb-2">Sent Manual Entry:</h4>
                   <div className="text-sm text-green-800">
-                    <p><span className="font-medium">Antibiotic:</span> {manualEntry.antibiotic_name}</p>
-                    <p><span className="font-medium">Dose:</span> {manualEntry.dose || 'Not specified'}</p>
-                    <p><span className="font-medium">Interval:</span> {manualEntry.interval || 'Not specified'}</p>
-                    <p><span className="font-medium">Duration:</span> {manualEntry.duration || 'Not specified'}</p>
-                    <p><span className="font-medium">Route:</span> {manualEntry.route || 'Not specified'}</p>
+                    <p>
+                      <span className="font-medium">Antibiotic:</span> {manualEntry.antibiotic_name}
+                    </p>
+                    <p>
+                      <span className="font-medium">Dose:</span> {manualEntry.dose || "Not specified"}
+                    </p>
+                    <p>
+                      <span className="font-medium">Interval:</span> {manualEntry.interval || "Not specified"}
+                    </p>
+                    <p>
+                      <span className="font-medium">Duration:</span> {manualEntry.duration || "Not specified"}
+                    </p>
+                    <p>
+                      <span className="font-medium">Route:</span> {manualEntry.route || "Not specified"}
+                    </p>
                   </div>
                 </div>
               )}
-              
-              <p className="text-xs text-gray-500 mt-2">
-                You will be redirected to the dashboard in a few seconds...
-              </p>
+
+              <p className="text-xs text-gray-500 mt-2">You will be redirected to the dashboard in a few seconds...</p>
             </div>
-            
+
             {/* Modal Footer */}
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
               <button
                 onClick={() => {
                   setShowSuccessModal(false);
-                  navigate('/');
+                  navigate("/");
                 }}
                 className="bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 transition-colors"
               >

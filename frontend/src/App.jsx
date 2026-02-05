@@ -15,7 +15,7 @@ const App = () => {
             path="/" 
             element={
               <ProtectedRoute>
-                <PatientsList />
+                <ClinicalDashboard />
               </ProtectedRoute>
             } 
           />
