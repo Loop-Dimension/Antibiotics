@@ -77,6 +77,14 @@ class PatientViewSet(viewsets.ModelViewSet):
             elif treatment_status.lower() == 'no_treatment':
                 queryset = queryset.filter(Q(antibiotics__isnull=True) | Q(antibiotics__exact='') | Q(antibiotics__iexact='none'))
         
+        # Patient type filtering (adult/child based on age, defaults to adult)
+        patient_type = self.request.query_params.get('patient_type', 'adult')
+        if patient_type == 'adult':
+            queryset = queryset.filter(age__gte=18)
+        elif patient_type == 'child':
+            queryset = queryset.filter(age__lt=18)
+        # patient_type == 'all' shows both
+
         # Age range filtering
         age_min = self.request.query_params.get('age_min', '')
         age_max = self.request.query_params.get('age_max', '')
@@ -372,6 +380,7 @@ class PatientViewSet(viewsets.ModelViewSet):
                 'risk_levels': ['low', 'medium', 'high'],
                 'culture_statuses': ['positive', 'negative'],
                 'treatment_statuses': ['on_treatment', 'no_treatment'],
+                'patient_types': [{'value': 'adult', 'label': 'Adult'}, {'value': 'child', 'label': 'Child'}, {'value': 'all', 'label': 'All'}],
                 'genders': [{'value': 'M', 'label': 'Male'}, {'value': 'F', 'label': 'Female'}, {'value': 'O', 'label': 'Other'}],
                 'ordering_options': [
                     {'value': '-date_recorded', 'label': 'Most Recent'},

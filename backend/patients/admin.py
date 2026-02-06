@@ -136,7 +136,7 @@ class SeverityPathogenAdmin(admin.ModelAdmin):
 
 @admin.register(AntibioticDosing)
 class AntibioticDosingAdmin(admin.ModelAdmin):
-    list_display = ['antibiotic', 'condition', 'severity', 'crcl_range_display', 'dose', 'route_display', 'duration', 'patient_type']
+    list_display = ['antibiotic', 'condition', 'severity', 'crcl_range_display', 'dose', 'route_display', 'interval', 'duration', 'dialysis_type', 'patient_type']
     list_filter = ['patient_type', 'dialysis_type', 'condition', 'severity__severity_order']
     search_fields = ['antibiotic', 'dose', 'condition__name']
     filter_horizontal = ['pathogens']

@@ -19,7 +19,7 @@ class Command(BaseCommand):
             
         imported_count = 0
         
-        with open(csv_file_path, 'r', encoding='utf-8') as file:
+        with open(csv_file_path, 'r', encoding='cp1252') as file:
             reader = csv.DictReader(file)
             
             for row in reader:

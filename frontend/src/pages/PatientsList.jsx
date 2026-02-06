@@ -15,6 +15,7 @@ const PatientsList = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [filterType, setFilterType] = useState('all');
+  const [patientType, setPatientType] = useState('adult');
   const [sortType, setSortType] = useState('-date_recorded');
   const [statistics, setStatistics] = useState(null);
   const [filterOptions, setFilterOptions] = useState(null);
@@ -25,7 +26,7 @@ const PatientsList = () => {
     fetchPatients(currentPage);
     fetchStatistics();
     fetchFilterOptions();
-  }, [currentPage, filterType, sortType]);
+  }, [currentPage, filterType, patientType, sortType]);
 
   const fetchPatients = async (page = 1) => {
     setLoading(true);
@@ -35,6 +36,7 @@ const PatientsList = () => {
       const filterOptions = {
         page,
         pageSize: 12,
+        patientType,
         ordering: sortType
       };
 
@@ -421,7 +423,16 @@ const PatientsList = () => {
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <h2 className="text-lg font-semibold text-gray-900">Patient Overview</h2>
-            <select 
+            <select
+              value={patientType}
+              onChange={(e) => { setPatientType(e.target.value); setCurrentPage(1); }}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="adult">Adult</option>
+              <option value="child">Child</option>
+              <option value="all">All Ages</option>
+            </select>
+            <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"

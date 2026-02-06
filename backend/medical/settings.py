@@ -87,6 +87,20 @@ DATABASES = {
 }
 
 
+#  Using PostgreSQL in production
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.environ.get('POSTGRES_DB', 'medical'),
+#         'USER': os.environ.get('POSTGRES_USER', 'orange'),
+#         'PASSWORD': os.environ.get('POSTGRES_PASSWORD', '00oo00oo'),
+#         'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
+#         'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+#     }
+# }
+
+
+
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
