@@ -253,6 +253,7 @@ const PrescriptionAnalysis = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Case #</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient ID</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diagnosis</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CrCl</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pathogen</th>
@@ -267,6 +268,14 @@ const PrescriptionAnalysis = () => {
                   <tr key={item.patient_id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                     <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                       {item.case_no}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-blue-600">
+                      <button
+                        onClick={() => navigate(`/patient/${item.patient_id}`)}
+                        className="hover:underline font-medium"
+                      >
+                        {item.patient_id}
+                      </button>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-700 max-w-[150px] truncate" title={item.diagnosis}>
                       {item.diagnosis}
@@ -289,8 +298,8 @@ const PrescriptionAnalysis = () => {
                             <div 
                               key={i} 
                               className={`text-xs px-2 py-0.5 rounded truncate ${
-                                rec === item.best_match 
-                                  ? 'bg-green-100 border border-green-300 text-green-800 font-medium' 
+                                rec === item.best_match && item.similarity_score >= 40
+                                  ? 'bg-green-100 border border-green-300 text-green-800 font-medium'
                                   : 'bg-gray-100 text-gray-700'
                               }`}
                               title={rec}

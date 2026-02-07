@@ -33,10 +33,12 @@ class AntibioticRecommendationEngine:
         'chronic pyelonephritis': 'Pyelonephritis',
         'kidney infection': 'Pyelonephritis',
         
+        'acute pyelitis': 'Pyelonephritis',
         'upper uti': 'Pyelonephritis',
-        
-        
         'uti': 'Pyelonephritis',
+        'urinary tract infection': 'Pyelonephritis',
+        'urinary track infection': 'Pyelonephritis',
+        'complicated urinary track infection': 'Pyelonephritis',
         'bladder infection': 'Pyelonephritis',
         'cystitis': 'Pyelonephritis',
         
@@ -202,10 +204,41 @@ class AntibioticRecommendationEngine:
                 'filter_steps': self.filter_steps
             }
     
+    def _try_match_diagnosis(self, diagnosis_text: str) -> Optional[Condition]:
+        """Try to match a single diagnosis string to a Condition via mapping, exact, and fuzzy match."""
+        diagnosis = diagnosis_text.lower().strip()
+        if not diagnosis:
+            return None
+
+        # Direct mapping check
+        for key, condition_name in self.DIAGNOSIS_MAPPING.items():
+            if key in diagnosis:
+                try:
+                    return Condition.objects.get(name=condition_name)
+                except Condition.DoesNotExist:
+                    continue
+
+        # Exact match check (case-insensitive)
+        all_conditions = Condition.objects.all()
+        for condition in all_conditions:
+            if condition.name.lower() == diagnosis:
+                return condition
+
+        # Fuzzy matching - prefer shortest (most specific) match
+        best_match = None
+        best_match_length = float('inf')
+        for condition in all_conditions:
+            condition_lower = condition.name.lower()
+            if all(word in diagnosis for word in condition_lower.split()):
+                if len(condition_lower) < best_match_length:
+                    best_match = condition
+                    best_match_length = len(condition_lower)
+
+        return best_match
+
     def _identify_condition(self) -> Optional[Condition]:
         """Step 1: Match patient diagnosis to condition with intelligent matching"""
-        diagnosis = self.patient.diagnosis1.lower().strip()
-        
+
         # Check if patient pathogen can help identify condition (for pneumoniae cases)
         if hasattr(self.patient, 'pathogen') and 'pneumoniae' in self.patient.pathogen.lower():
             condition_from_pathogen = self._get_condition_from_pathogen(self.patient.pathogen)
@@ -223,62 +256,35 @@ class AntibioticRecommendationEngine:
                     return condition
                 except Condition.DoesNotExist:
                     pass
-        
-        # Direct mapping check
-        for key, condition_name in self.DIAGNOSIS_MAPPING.items():
-            if key in diagnosis:
-                try:
-                    condition = Condition.objects.get(name=condition_name)
-                    self.matched_condition = condition
-                    self.filter_steps.append({
-                        'step': 1,
-                        'name': 'Condition Identification',
-                        'input': f"Patient diagnosis: '{self.patient.diagnosis1}'",
-                        'output': f"Matched condition: '{condition.name}'",
-                        'result': 'success'
-                    })
-                    return condition
-                except Condition.DoesNotExist:
-                    continue
-        
-        # Exact match check (case-insensitive)
-        all_conditions = Condition.objects.all()
-        for condition in all_conditions:
-            if condition.name.lower() == diagnosis:
-                self.matched_condition = condition
-                self.filter_steps.append({
-                    'step': 1,
-                    'name': 'Condition Identification',
-                    'input': f"Patient diagnosis: '{self.patient.diagnosis1}'",
-                    'output': f"Exact matched condition: '{condition.name}'",
-                    'result': 'success'
-                })
-                return condition
-        
-        # Fuzzy matching for partial matches - prefer shortest match (most specific)
-        best_match = None
-        best_match_length = float('inf')
-        
-        for condition in all_conditions:
-            condition_lower = condition.name.lower()
-            # Check if all words from condition name are in the diagnosis
-            if all(word in diagnosis for word in condition_lower.split()):
-                # Prefer shorter matches (more specific)
-                if len(condition_lower) < best_match_length:
-                    best_match = condition
-                    best_match_length = len(condition_lower)
-        
-        if best_match:
-            self.matched_condition = best_match
+
+        # Try diagnosis1 first
+        condition = self._try_match_diagnosis(self.patient.diagnosis1 or '')
+        if condition and AntibioticDosing.objects.filter(condition=condition).exists():
+            self.matched_condition = condition
             self.filter_steps.append({
                 'step': 1,
                 'name': 'Condition Identification',
                 'input': f"Patient diagnosis: '{self.patient.diagnosis1}'",
-                'output': f"Fuzzy matched condition: '{best_match.name}'",
+                'output': f"Matched condition: '{condition.name}'",
                 'result': 'success'
             })
-            return best_match
-        
+            return condition
+
+        # Fallback: try diagnosis2 (if diagnosis1 had no match or no dosings)
+        diagnosis2 = getattr(self.patient, 'diagnosis2', None) or ''
+        if diagnosis2.strip():
+            condition2 = self._try_match_diagnosis(diagnosis2)
+            if condition2 and AntibioticDosing.objects.filter(condition=condition2).exists():
+                self.matched_condition = condition2
+                self.filter_steps.append({
+                    'step': 1,
+                    'name': 'Condition Identification',
+                    'input': f"Diagnosis1 '{self.patient.diagnosis1}' has no guidelines, using diagnosis2: '{diagnosis2}'",
+                    'output': f"Matched condition via diagnosis2: '{condition2.name}'",
+                    'result': 'success'
+                })
+                return condition2
+
         self.filter_steps.append({
             'step': 1,
             'name': 'Condition Identification',
@@ -641,15 +647,20 @@ class AntibioticRecommendationEngine:
         else:
             pathogen_filtered_count = queryset.count()
         
-        # Filter by renal function - INCLUSIVE approach to show all options
+        # Filter by renal function - match patient's CrCl to the correct dosing range
         if self.dialysis_type != 'none':
             # Patient is on dialysis
             renal_query = Q(dialysis_type=self.dialysis_type)
             queryset = queryset.filter(renal_query)
         else:
-            # Show ALL medications for this condition, not just exact CrCl matches
-            # This allows clinicians to see all options and make informed decisions
-            queryset = queryset.filter(dialysis_type='none')
+            # Match the patient's CrCl value to the appropriate dosing range
+            crcl = self.crcl_value
+            queryset = queryset.filter(
+                dialysis_type='none'
+            ).filter(
+                Q(crcl_min__isnull=True, crcl_max__isnull=True) |
+                Q(crcl_min__lte=crcl, crcl_max__gte=crcl)
+            )
         
         renal_filtered_count = queryset.count()
         
@@ -726,48 +737,35 @@ class AntibioticRecommendationEngine:
         
         # Sort by preference score (higher is better) and medical appropriateness
         formatted_recommendations.sort(key=lambda x: (x['preference_score'], x['appropriateness_level']), reverse=True)
-        
-        # Return ALL recommendations without limiting to top 3
-        all_recommendations = formatted_recommendations
-        
+
+        # Deduplicate - keep only the highest-scoring entry per antibiotic
+        all_recommendations = self._deduplicate_by_antibiotic_name(formatted_recommendations)
+
         # Update ranks for all recommendations
         for i, rec in enumerate(all_recommendations, 1):
             rec['rank'] = i
-        
+
         return all_recommendations
     
     def _should_filter_recommendation(self, dosing: AntibioticDosing) -> bool:
         """
-        Determine if a recommendation should be filtered out based on specific criteria
-        Returns True if the recommendation should be excluded
-        
-        Note: Currently disabled to show all available medical recommendations
+        Determine if a recommendation should be filtered out based on specific criteria.
+        Returns True if the recommendation should be excluded.
+        Filters entries that only say "no dose adjustment" or have no actionable info.
         """
-        # Temporarily disable filtering to show all available recommendations
+        vague_phrases = ['no dosage adjustment', 'no dose adjustment', 'usual dose', 'recommended dose']
+
+        dose_lower = (dosing.dose or '').lower().strip()
+
+        # Filter if dose is just a vague phrase with no route and no interval
+        if dose_lower in vague_phrases:
+            has_route = dosing.route and len(dosing.route) > 0
+            has_interval = dosing.interval and dosing.interval.strip()
+            # Only filter if there's no useful dosing info at all
+            if not has_route and not has_interval:
+                return True
+
         return False
-        
-        # Original filtering logic (commented out for now)
-        # # Filter out recommendations with "No dosage adjustment" in dose field
-        # if dosing.dose and "no dosage adjustment" in dosing.dose.lower():
-        #     return True
-        # 
-        # # Filter out recommendations with "No dosage adjustment" in remark field
-        # if dosing.remark and "no dosage adjustment" in dosing.remark.lower():
-        #     return True
-        # 
-        # # Filter out recommendations with "No dosage adjustment" in interval field
-        # if dosing.interval and "no dosage adjustment" in dosing.interval.lower():
-        #     return True
-        # 
-        # # Filter out recommendations with "No dosage adjustment" in duration field
-        # if dosing.duration and "no dosage adjustment" in dosing.duration.lower():
-        #     return True
-        # 
-        # # Filter out recommendations with "No dosage adjustment" in antibiotic name
-        # if dosing.antibiotic and "no dosage adjustment" in dosing.antibiotic.lower():
-        #     return True
-        # 
-        # return False
     
     def _deduplicate_by_antibiotic_name(self, recommendations: List[Dict]) -> List[Dict]:
         """Remove duplicate antibiotics, keeping only the highest scoring instance"""

@@ -55,10 +55,8 @@ const PatientsList = () => {
       setTotalCount(response.data.count);
       setTotalPages(response.data.total_pages);
       
-      // Update statistics if provided
-      if (response.data.stats) {
-        setStatistics(response.data.stats);
-      }
+      // Stats are loaded by the dedicated fetchStatistics() call
+      // Don't overwrite here — the list endpoint uses a different structure
       
       setLoading(false);
     } catch (error) {
@@ -494,6 +492,9 @@ const PatientsList = () => {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Treatment
                   </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Regimen
+                  </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
@@ -544,6 +545,19 @@ const PatientsList = () => {
                           </div>
                         ) : (
                           <span className="text-sm text-gray-500">None</span>
+                        )}
+                      </td>
+
+                      {/* Regimen Available */}
+                      <td className="px-4 py-4 text-center">
+                        {patient.has_recommendations ? (
+                          <span className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                            Available
+                          </span>
+                        ) : (
+                          <span className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-500">
+                            No Matching Regimen
+                          </span>
                         )}
                       </td>
 

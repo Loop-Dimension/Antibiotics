@@ -976,14 +976,21 @@ const ClinicalDashboard = () => {
                       <div className="text-center">
                         <div className="text-red-600 font-medium">No Clinical Recommendations Found</div>
                         <div className="text-sm text-gray-600 mt-2">
-                          No antibiotic recommendations available for this patient profile.
+                          {recommendationData.reason || recommendationData.error || 'No antibiotic recommendations available for this patient profile.'}
+                        </div>
+                      </div>
+                    ) : recommendationData?.success === true && recommendations.length === 0 ? (
+                      <div className="text-center">
+                        <div className="text-amber-600 font-medium">No Matching Regimen</div>
+                        <div className="text-sm text-gray-600 mt-2">
+                          No dosing guidelines match this patient's CrCl range and diagnosis. You can add a manual entry below.
                         </div>
                       </div>
                     ) : (
                       <div className="text-center">
-                        <div className="text-gray-600 font-medium">Select a patient to view recommendations</div>
+                        <div className="text-gray-600 font-medium">Loading recommendations...</div>
                         <div className="text-sm text-gray-500 mt-2">
-                          Click "Get Recommendations" to load clinical guidance.
+                          Fetching clinical guidance for this patient.
                         </div>
                       </div>
                     )}

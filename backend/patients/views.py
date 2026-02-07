@@ -78,12 +78,14 @@ class PatientViewSet(viewsets.ModelViewSet):
                 queryset = queryset.filter(Q(antibiotics__isnull=True) | Q(antibiotics__exact='') | Q(antibiotics__iexact='none'))
         
         # Patient type filtering (adult/child based on age, defaults to adult)
-        patient_type = self.request.query_params.get('patient_type', 'adult')
-        if patient_type == 'adult':
-            queryset = queryset.filter(age__gte=18)
-        elif patient_type == 'child':
-            queryset = queryset.filter(age__lt=18)
-        # patient_type == 'all' shows both
+        # Only apply on list views — detail/retrieve must access any patient
+        if self.action == 'list':
+            patient_type = self.request.query_params.get('patient_type', 'adult')
+            if patient_type == 'adult':
+                queryset = queryset.filter(age__gte=18)
+            elif patient_type == 'child':
+                queryset = queryset.filter(age__lt=18)
+            # patient_type == 'all' shows both
 
         # Age range filtering
         age_min = self.request.query_params.get('age_min', '')
@@ -700,11 +702,11 @@ class PatientViewSet(viewsets.ModelViewSet):
                     for rec_antibiotic in recommended_antibiotics:
                         rec_normalized = self._normalize_antibiotic(rec_antibiotic)
                         score = self._calculate_similarity(actual_normalized, rec_normalized)
-                        
+
                         if score > similarity_score:
                             similarity_score = score
                             matched_recommendation = rec_antibiotic
-                    
+
                     if similarity_score >= 0.8:
                         match_status = 'exact_match'
                         exact_matches += 1
@@ -714,6 +716,7 @@ class PatientViewSet(viewsets.ModelViewSet):
                     else:
                         match_status = 'no_match'
                         no_matches += 1
+                        matched_recommendation = None  # Don't highlight anything for no_match
                 else:
                     no_recommendations += 1
                 
@@ -755,59 +758,60 @@ class PatientViewSet(viewsets.ModelViewSet):
                 'error': str(e)
             }, status=500)
     
+    def _extract_drug_names(self, antibiotic_str):
+        """Extract individual drug names from a prescription string.
+        e.g. 'IV piperacillin/tazobactam 2.25g q8hr' -> {'piperacillin', 'tazobactam'}
+        e.g. 'Levofloxacin 500-750mg' -> {'levofloxacin'}
+        e.g. 'Amoxicillin/clavulanate 1.2 g' -> {'amoxicillin', 'clavulanate'}
+        """
+        import re
+        if not antibiotic_str:
+            return set()
+
+        normalized = antibiotic_str.lower().strip()
+        # Remove route prefixes
+        normalized = re.sub(r'^(iv|po|oral|im)\s+', '', normalized)
+        # Extract the drug part (letters, /, - before any digit or space+digit)
+        match = re.match(r'^([a-z/\-\s]+?)(?:\s+\d|\s*$)', normalized)
+        drug_part = match.group(1).strip() if match else normalized.split()[0]
+        # Split on / to get individual drug names
+        names = set()
+        for part in drug_part.split('/'):
+            name = part.strip().rstrip('-')
+            if name and len(name) > 1:
+                names.add(name)
+        return names
+
     def _normalize_antibiotic(self, antibiotic_str):
         """Normalize antibiotic name for comparison"""
-        if not antibiotic_str:
-            return ""
-        
-        # Convert to lowercase and remove common prefixes
-        normalized = antibiotic_str.lower().strip()
-        normalized = normalized.replace('iv ', '').replace('po ', '').replace('oral ', '')
-        
-        # Extract just the antibiotic name (before dose)
-        import re
-        # Match antibiotic name (letters, /, -)
-        match = re.match(r'^([a-z/\-]+)', normalized)
-        if match:
-            return match.group(1)
-        return normalized
-    
+        names = self._extract_drug_names(antibiotic_str)
+        return '/'.join(sorted(names)) if names else ''
+
     def _calculate_similarity(self, str1, str2):
-        """Calculate similarity between two strings using various methods"""
+        """Calculate similarity: only match if they share the same drug name."""
         if not str1 or not str2:
             return 0
-        
-        # Exact match
-        if str1 == str2:
+
+        # Extract drug name sets from both
+        drugs1 = self._extract_drug_names(str1)
+        drugs2 = self._extract_drug_names(str2)
+
+        if not drugs1 or not drugs2:
+            return 0
+
+        # Exact same set of drugs
+        if drugs1 == drugs2:
             return 1.0
-        
-        # One contains the other
-        if str1 in str2 or str2 in str1:
-            return 0.9
-        
-        # Check for common antibiotic base name
-        common_bases = [
-            'ceftriaxone', 'cefepime', 'ceftazidime', 'cefotaxime', 'cefuroxime', 'cefpodoxime',
-            'piperacillin', 'tazobactam', 'amoxicillin', 'clavulanate',
-            'levofloxacin', 'ciprofloxacin', 'moxifloxacin',
-            'ertapenem', 'meropenem', 'imipenem',
-            'vancomycin', 'teicoplanin'
-        ]
-        
-        for base in common_bases:
-            if base in str1 and base in str2:
-                return 0.85
-        
-        # Levenshtein-like simple similarity
-        longer = str1 if len(str1) > len(str2) else str2
-        shorter = str2 if len(str1) > len(str2) else str1
-        
-        if len(longer) == 0:
-            return 1.0
-        
-        # Count matching characters
-        matches = sum(1 for c in shorter if c in longer)
-        return matches / len(longer)
+
+        # Check overlap: any shared drug name
+        common = drugs1 & drugs2
+        if common:
+            # Partial match: e.g. "piperacillin/tazobactam" vs "piperacillin"
+            all_drugs = drugs1 | drugs2
+            return len(common) / len(all_drugs)
+
+        # No shared drug name at all = 0
+        return 0
 
 
 class CultureTestViewSet(viewsets.ModelViewSet):
