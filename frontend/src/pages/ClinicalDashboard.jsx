@@ -478,7 +478,14 @@ const ClinicalDashboard = () => {
       </div>
 
       {/* Main Content */}
-      {patientId && patientData ? (
+      {patientId && loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="text-gray-500 mt-2">Loading patient data...</div>
+          </div>
+        </div>
+      ) : patientId && patientData ? (
         /* Patient View Layout */
         <div className="flex">
           {/* Left Panel - Patient Information */}
